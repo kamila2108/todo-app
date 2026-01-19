@@ -2,7 +2,52 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  /* 配色パレット（明度順：薄い→濃い） */
+  --color-bg: #FAE5D8;         /* 1. 背景固定 */
+  --color-card: #CCE2ED;      /* 2. カード背景 */
+  --color-accent: #98AEDE;    /* 3. アクセント */
+  --color-sub: #578DDB;       /* 4. サブ操作 */
+  --color-primary: #98AEDE;   /* 5. 主要操作 */
+  --color-emphasis: #2A114B;  /* 6. 最重要操作 */
+  
+  /* セマンティックカラー */
+  --bg-main: var(--color-primary);
+  --bg-card: var(--color-card);
+  --bg-card-completed: var(--color-card);
+  --border-default: var(--color-accent);
+  --button-primary: var(--color-primary);
+  --button-primary-hover: var(--color-emphasis);
+  --button-secondary: var(--color-accent);
+  --button-sub: var(--color-sub);
+  --accent-active: var(--color-sub);
+  --accent-checkbox: var(--color-sub);
+  --focus-ring: var(--color-sub);
+  --focus-border: var(--color-primary);
+  --text-color: #000000;       /* すべての文字色は黒で固定 */
+}
+
 body {
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
     sans-serif;
+  background-color: var(--bg-main);
+}
+
+/* 2カラムレイアウトの確実な適用 */
+@media (min-width: 768px) {
+  .todo-columns-container {
+    gap: 24px !important;
+  }
+  .todo-container-left {
+    /* gapを考慮して、30%からgap分を調整 */
+    width: calc(30% - 7.2px) !important;
+    flex: 0 0 calc(30% - 7.2px) !important;
+    min-width: 0;
+  }
+  .todo-container-right {
+    /* gapを考慮して、70%からgap分を調整 */
+    width: calc(70% - 16.8px) !important;
+    flex: 0 0 calc(70% - 16.8px) !important;
+    min-width: 0;
+  }
 }

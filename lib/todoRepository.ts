@@ -1,5 +1,6 @@
 import { Todo } from "@/lib/types/todo";
 import { TodoFormValues } from "@/features/todo/types/todo";
+import { addCategory } from "@/lib/store/category-store";
 
 let todosStore: Todo[] = [];
 
@@ -33,11 +34,18 @@ export const todoRepository = {
       title: data.title,
       description: data.description,
       dueDate,
+      category: data.category,
       completed: false,
       createdAt: now,
       updatedAt: now,
     };
     todosStore = [newTodo, ...todosStore];
+    
+    // カテゴリをストアに追加
+    if (data.category) {
+      addCategory(data.category);
+    }
+    
     return newTodo;
   },
 

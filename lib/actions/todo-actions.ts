@@ -18,6 +18,7 @@ import {
   deleteTodo as deleteTodoInStore,
   toggleTodo as toggleTodoInStore,
 } from '@/lib/store/todo-store';
+import { addCategory } from '@/lib/store/category-store';
 import { Todo } from '@/lib/types/todo';
 
 export interface ActionResult<T> {
@@ -68,10 +69,17 @@ export async function createTodoAction(
   try {
     const validatedInput = createTodoSchema.parse(input);
     const dueDate = parseDueDate(validatedInput.dueDate);
+    
+    // カテゴリが指定されている場合は、カテゴリストアに追加
+    if (validatedInput.category) {
+      addCategory(validatedInput.category);
+    }
+    
     const todo = createTodoInStore(
       validatedInput.title,
       validatedInput.description,
-      dueDate
+      dueDate,
+      validatedInput.category
     );
     return {
       success: true,
@@ -97,11 +105,18 @@ export async function updateTodoAction(
   try {
     const validatedInput = updateTodoSchema.parse(input);
     const dueDate = parseDueDate(validatedInput.dueDate);
+    
+    // カテゴリが指定されている場合は、カテゴリストアに追加
+    if (validatedInput.category) {
+      addCategory(validatedInput.category);
+    }
+    
     const todo = updateTodoInStore(validatedInput.id, {
       title: validatedInput.title,
       description: validatedInput.description,
       completed: validatedInput.completed,
       dueDate,
+      category: validatedInput.category,
     });
 
     if (!todo) {

@@ -16,6 +16,15 @@ export const createTodoSchema = z.object({
       (val) => !val || /^(?:\d{8}|\d{4}-\d{2}-\d{2})$/.test(val),
       '期日はYYYYMMDDまたはYYYY-MM-DD形式で入力してください'
     ),
+  // カテゴリ（任意）: 空文字列はundefinedに変換
+  category: z
+    .union([z.string(), z.literal('')])
+    .optional()
+    .transform((val) => (val === '' || !val ? undefined : val?.trim()))
+    .refine(
+      (val) => !val || val.length <= 50,
+      'カテゴリは50文字以内で入力してください'
+    ),
 });
 
 // Todo更新用のスキーマ
@@ -35,6 +44,15 @@ export const updateTodoSchema = z.object({
     .refine(
       (val) => !val || /^(?:\d{8}|\d{4}-\d{2}-\d{2})$/.test(val),
       '期日はYYYYMMDDまたはYYYY-MM-DD形式で入力してください'
+    ),
+  // カテゴリ（任意）: 空文字列はundefinedに変換
+  category: z
+    .union([z.string(), z.literal('')])
+    .optional()
+    .transform((val) => (val === '' || !val ? undefined : val?.trim()))
+    .refine(
+      (val) => !val || val.length <= 50,
+      'カテゴリは50文字以内で入力してください'
     ),
 });
 

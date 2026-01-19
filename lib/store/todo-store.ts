@@ -12,13 +12,14 @@ export function getTodoById(id: string): Todo | undefined {
   return todos.find((todo) => todo.id === id);
 }
 
-export function createTodo(title: string, description?: string, dueDate?: Date): Todo {
+export function createTodo(title: string, description?: string, dueDate?: Date, category?: string): Todo {
   const now = new Date();
   const todo: Todo = {
     id: `todo-${nextId++}`,
     title,
     description,
     dueDate,
+    category,
     completed: false,
     createdAt: now,
     updatedAt: now,
@@ -29,7 +30,7 @@ export function createTodo(title: string, description?: string, dueDate?: Date):
 
 export function updateTodo(
   id: string,
-  updates: { title?: string; description?: string; completed?: boolean; dueDate?: Date }
+  updates: { title?: string; description?: string; completed?: boolean; dueDate?: Date; category?: string }
 ): Todo | null {
   const todo = todos.find((t) => t.id === id);
   if (!todo) {

@@ -14,10 +14,20 @@ export function TodoItem({ todo, onUpdate }: TodoItemProps): JSX.Element {
   const [isToggling, setIsToggling] = useState<boolean>(false);
 
   const handleToggle = async (): Promise<void> => {
+    // スクロール位置を保存（チェックボックス更新前に）
+    const scrollY = window.scrollY || window.pageYOffset || 0;
+    
     setIsToggling(true);
     const result = await toggleTodoAction({ id: todo.id });
     setIsToggling(false);
     if (result.success) {
+      // スクロール位置を復元
+      requestAnimationFrame(() => {
+        window.scrollTo({
+          top: scrollY,
+          behavior: 'auto',
+        });
+      });
       onUpdate?.();
     } else {
       alert(result.error || 'Todo update failed');
@@ -40,11 +50,13 @@ export function TodoItem({ todo, onUpdate }: TodoItemProps): JSX.Element {
 
   return (
     <div
-      className={`p-4 border rounded-lg shadow-sm transition-all ${
-        todo.completed
-          ? 'bg-gray-50 border-gray-200'
-          : 'bg-white border-gray-300'
-      }`}
+      className="p-4 border rounded-lg shadow-sm transition-all"
+      style={{
+        backgroundColor: todo.completed ? '#CCE2ED' : '#FFFFFF',
+        borderColor: 'var(--border-default)',
+        borderWidth: '1px',
+        borderStyle: 'solid'
+      }}
     >
       <div className="flex items-start gap-3">
         <input
@@ -52,7 +64,11 @@ export function TodoItem({ todo, onUpdate }: TodoItemProps): JSX.Element {
           checked={todo.completed}
           onChange={handleToggle}
           disabled={isToggling}
-          className="mt-1 h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded cursor-pointer disabled:opacity-50"
+          className="mt-1 h-5 w-5 rounded cursor-pointer disabled:opacity-50"
+          style={{
+            accentColor: 'var(--accent-checkbox)',
+            borderColor: 'var(--border-default)'
+          }}
         />
         <div className="flex-1 min-w-0">
           <h3
@@ -73,24 +89,37 @@ export function TodoItem({ todo, onUpdate }: TodoItemProps): JSX.Element {
               {todo.description}
             </p>
           )}
-          {todo.dueDate && (
-            <p
-              className={`mt-1 text-xs ${
-                todo.completed
-                  ? 'text-gray-400'
-                  : todo.dueDate < new Date()
-                  ? 'text-red-600 font-semibold'
-                  : 'text-gray-500'
-              }`}
-            >
-              期日:{' '}
-              {todo.dueDate.toLocaleDateString('ja-JP', {
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-              })}
-            </p>
-          )}
+          <div className="mt-2 flex flex-wrap gap-2 items-center">
+            {todo.category && (
+              <span
+              className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium"
+              style={{
+                backgroundColor: todo.completed ? 'rgba(223, 182, 178, 0.5)' : 'var(--color-accent)',
+                color: 'var(--text-color)'
+              }}
+              >
+                {todo.category}
+              </span>
+            )}
+            {todo.dueDate && (
+              <p
+                className={`text-xs ${
+                  todo.completed
+                    ? 'text-gray-400'
+                    : new Date(todo.dueDate) < new Date()
+                    ? 'text-red-600 font-semibold'
+                    : 'text-gray-500'
+                }`}
+              >
+                期日:{' '}
+                {new Date(todo.dueDate).toLocaleDateString('ja-JP', {
+                  year: 'numeric',
+                  month: '2-digit',
+                  day: '2-digit',
+                })}
+              </p>
+            )}
+          </div>
         </div>
         <button
           onClick={handleDelete}

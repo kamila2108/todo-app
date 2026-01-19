@@ -23,11 +23,21 @@ export function TodoFilterComponent({
         <button
           key={option.value}
           onClick={() => onFilterChange(option.value)}
-          className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-            currentFilter === option.value
-              ? 'bg-blue-600 text-white'
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-          }`}
+          className="px-4 py-2 rounded-md text-sm font-medium transition-colors"
+          style={{
+            backgroundColor: currentFilter === option.value ? 'var(--button-sub)' : 'var(--button-secondary)',
+            color: currentFilter === option.value ? '#FFFFFF' : 'var(--text-color)'
+          }}
+          onMouseEnter={(e) => {
+            if (currentFilter !== option.value) {
+              e.currentTarget.style.backgroundColor = 'var(--button-sub)';
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (currentFilter !== option.value) {
+              e.currentTarget.style.backgroundColor = 'var(--button-secondary)';
+            }
+          }}
         >
           {option.label}
         </button>
