@@ -74,7 +74,7 @@ export const TodoApp: React.FC<TodoAppProps> = ({ initialTodos }) => {
   return (
     <div className="flex flex-col md:flex-row md:items-start w-full todo-columns-container">
       {/* 左側：入力エリア */}
-      <div className="todo-container-left w-full mb-6 md:mb-0">
+      <div className="todo-container-left w-full">
         <h1 className="mb-4 text-center md:text-left text-2xl font-bold" style={{ color: '#000000' }}>
           Todo アプリ
         </h1>
