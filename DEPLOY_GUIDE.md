@@ -616,18 +616,143 @@ Vercelのダッシュボードで、以下のいずれかの方法でプロジ�
 
 #### エラーを修正した後の再デプロイ
 
-1. **コードを修正**
-2. **変更をコミット**:
-   ```powershell
-   git add .
-   git commit -m "Fix deployment error"
-   ```
-3. **GitHubにプッシュ**:
-   ```powershell
-   git push
-   ```
-4. **Vercelが自動的に再デプロイします**
-   - 数分待って、再度確認してください
+**何をするのか**: 修正したコードをGitHubにアップロードして、Vercelが自動的に再デプロイするようにする
+
+**なぜ必要か**: コードを修正しても、GitHubにアップロードしないとVercelは新しいコードを取得できません
+
+##### 手順1: PowerShellを開く
+
+1. **Windowsキー**を押す
+2. 「**PowerShell**」と入力
+3. 「**Windows PowerShell**」をクリック
+
+##### 手順2: プロジェクトフォルダに移動する
+
+**何をするのか**: PowerShellでプロジェクトフォルダに移動する
+
+**なぜ必要か**: Gitコマンドを実行するには、プロジェクトフォルダにいる必要があります
+
+**コマンドを実行**（プロジェクトフォルダのパスに置き換えてください）：
+```powershell
+cd C:\Users\tokam\Downloads\1
+```
+
+**期待される結果**: 
+- 何も表示されないか、エラーメッセージが表示されない場合は成功です
+- PowerShellのプロンプト（`PS C:\Users\tokam\Downloads\1>`）が表示されます
+
+**💡 プロジェクトフォルダの場所が分からない場合**：
+- エクスプローラーでプロジェクトフォルダを開く
+- アドレスバーをクリックして、パスをコピー
+- PowerShellで `cd ` の後にペースト
+
+##### 手順3: 変更したファイルをGitに追加する
+
+**何をするのか**: 修正したファイルをGitの管理対象に追加する
+
+**なぜ必要か**: Gitに「このファイルを変更しました」と伝えるため
+
+**コマンドを実行**：
+```powershell
+git add .
+```
+
+**期待される結果**: 
+- 何も表示されないのが正常です（エラーが出なければ成功）
+- 警告メッセージ（`warning: LF will be replaced by CRLF`）が表示される場合がありますが、**無視して大丈夫です**
+
+**💡 コマンドの意味**：
+- `git add` = Gitに「このファイルを追加/変更しました」と伝える
+- `.` = 現在のフォルダ内のすべてのファイルを意味する
+
+##### 手順4: 変更をコミットする
+
+**何をするのか**: 変更内容を「スナップショット」として保存する
+
+**なぜ必要か**: GitHubにアップロードする前に、変更を記録する必要があるため
+
+**コマンドを実行**：
+```powershell
+git commit -m "Fix Todo type inconsistency"
+```
+
+**期待される結果**:
+```
+[main xxxxxxx] Fix Todo type inconsistency
+ X files changed, Y insertions(+), Z deletions(-)
+```
+
+**💡 コマンドの意味**：
+- `git commit` = 変更を「スナップショット」として保存する
+- `-m "Fix Todo type inconsistency"` = この変更の説明（コミットメッセージ）を指定する
+- メッセージは日本語でもOKです（例: `"Todo型の不一致を修正"`）
+
+**⚠️ もし「Please tell me who you are」というエラーが出た場合**：
+- Gitの設定がまだ完了していない可能性があります
+- 以下のコマンドを実行してください（GitHubアカウントの情報に置き換えてください）：
+  ```powershell
+  git config --global user.email "your-email@example.com"
+  git config --global user.name "Your Name"
+  ```
+- その後、再度 `git commit` を実行してください
+
+##### 手順5: GitHubにプッシュする
+
+**何をするのか**: ローカルの変更をGitHubにアップロードする
+
+**なぜ必要か**: VercelがGitHubからコードを取得してデプロイするため
+
+**コマンドを実行**：
+```powershell
+git push
+```
+
+**期待される結果**:
+```
+Enumerating objects: X, done.
+Counting objects: 100% (X/X), done.
+Delta compression using up to 8 threads
+Compressing objects: 100% (X/X), done.
+Writing objects: 100% (X/X), done.
+To https://github.com/kamila2108/todo-app.git
+   xxxxxxx..yyyyyyy  main -> main
+```
+
+**💡 コマンドの意味**：
+- `git push` = ローカルの変更をGitHubにアップロードする
+
+**⚠️ もし認証が求められた場合**：
+- ブラウザが自動的に開いて、GitHubの認証画面が表示されます
+- 「Authorize git-ecosystem」をクリックしてください
+- 認証が完了すると、自動的にプッシュが続行されます
+
+##### 手順6: Vercelで再デプロイを確認する
+
+**何をするのか**: Vercelのダッシュボードで、自動的に再デプロイが開始されたか確認する
+
+**なぜ必要か**: デプロイが成功したか確認するため
+
+1. **ブラウザでVercelのダッシュボードを開く**
+   - https://vercel.com/dashboard にアクセス
+   - または、既に開いているVercelのページをリロード（F5キー）
+
+2. **プロジェクトを選択**
+   - `todo-app` プロジェクトをクリック
+
+3. **デプロイの進行状況を確認**
+   - 「Deployments」タブをクリック
+   - 一番上に新しいデプロイが表示されます
+   - 「Building」→「Deploying」→「Ready」と進行します
+   - **通常、2〜5分程度かかります**
+
+4. **デプロイが完了したら**
+   - 「Ready」と表示されれば成功です！
+   - 「Visit」ボタンをクリックして、アプリが正常に動作するか確認してください
+
+**💡 コマンドのコピー方法（初心者向け）**：
+- 上記のコードブロック（```powershell と ``` の間）から、**コマンドの部分だけ**をコピーしてください
+- 例: `git add .` という行をコピー
+- PowerShellに貼り付けてEnterキーを押してください
 
 ### 6-4. 公開URLを確認する
 
