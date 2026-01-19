@@ -1,15 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import { todoRepository } from "@/lib/todoRepository";
-import { todoSchema } from "@/features/todo/schemas/todoSchema";
+import { createTodoSchema } from "@/lib/validations/todo";
 
 export function GET(): NextResponse {
   const todos = todoRepository.getAll();
-  return NextResponse.json(todos, { status: 200 });
+  // DateオブジェクトをISO文字列に変換してJSONで返す
+  const serializedTodos = todos.map(todo => ({
+    ...todo,
+    createdAt: todo.createdAt.toISOString(),
+    updatedAt: todo.updatedAt.toISOString(),
+    dueDate: todo.dueDate ? todo.dueDate.toISOString() : undefined,
+  }));
+  return NextResponse.json(serializedTodos, { status: 200 });
 }
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
   const body = await request.json();
-  const parsed = todoSchema.safeParse(body);
+  const parsed = createTodoSchema.safeParse(body);
 
   if (!parsed.success) {
     return NextResponse.json(
@@ -19,7 +26,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 
   const todo = todoRepository.create(parsed.data);
-  return NextResponse.json(todo, { status: 201 });
+  // DateオブジェクトをISO文字列に変換してJSONで返す
+  const serializedTodo = {
+    ...todo,
+    createdAt: todo.createdAt.toISOString(),
+    updatedAt: todo.updatedAt.toISOString(),
+    dueDate: todo.dueDate ? todo.dueDate.toISOString() : undefined,
+  };
+  return NextResponse.json(serializedTodo, { status: 201 });
 }
 
 export async function PATCH(request: NextRequest): Promise<NextResponse> {
@@ -41,7 +55,14 @@ export async function PATCH(request: NextRequest): Promise<NextResponse> {
     );
   }
 
-  return NextResponse.json(updated, { status: 200 });
+  // DateオブジェクトをISO文字列に変換してJSONで返す
+  const serializedTodo = {
+    ...updated,
+    createdAt: updated.createdAt.toISOString(),
+    updatedAt: updated.updatedAt.toISOString(),
+    dueDate: updated.dueDate ? updated.dueDate.toISOString() : undefined,
+  };
+  return NextResponse.json(serializedTodo, { status: 200 });
 }
 
 export async function DELETE(request: NextRequest): Promise<NextResponse> {
