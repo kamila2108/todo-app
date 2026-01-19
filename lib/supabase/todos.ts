@@ -3,6 +3,7 @@
  */
 
 import { supabase } from './client';
+import type { Database } from './database.types';
 import type { Todo } from '@/lib/types/todo';
 
 /**
@@ -56,16 +57,17 @@ export async function createTodo(
   }
 ): Promise<Todo | null> {
   try {
+    const insertData: Database['public']['Tables']['todos']['Insert'] = {
+      user_id: userId,
+      title: todoData.title,
+      description: todoData.description || null,
+      due_date: todoData.dueDate ? todoData.dueDate.toISOString().split('T')[0] : null,
+      category: todoData.category || null,
+      completed: false,
+    };
     const { data, error } = await supabase
       .from('todos')
-      .insert({
-        user_id: userId,
-        title: todoData.title,
-        description: todoData.description || null,
-        due_date: todoData.dueDate ? todoData.dueDate.toISOString().split('T')[0] : null,
-        category: todoData.category || null,
-        completed: false,
-      })
+      .insert(insertData)
       .select()
       .single();
 

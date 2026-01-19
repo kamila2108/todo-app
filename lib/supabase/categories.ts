@@ -3,6 +3,7 @@
  */
 
 import { supabase } from './client';
+import type { Database } from './database.types';
 
 /**
  * 指定されたユーザーのすべてのカテゴリを取得
@@ -47,12 +48,13 @@ export async function addCategory(userId: string, categoryName: string): Promise
     }
 
     // カテゴリを追加
+    const insertData: Database['public']['Tables']['categories']['Insert'] = {
+      user_id: userId,
+      name: trimmed,
+    };
     const { error } = await supabase
       .from('categories')
-      .insert({
-        user_id: userId,
-        name: trimmed,
-      });
+      .insert(insertData);
 
     if (error) {
       console.error('カテゴリ追加エラー:', error);

@@ -3,6 +3,7 @@
  */
 
 import { supabase } from './client';
+import type { Database } from './database.types';
 
 export interface User {
   id: string;
@@ -30,9 +31,12 @@ export async function findOrCreateUser(name: string): Promise<User | null> {
     }
 
     // ユーザーが見つからない場合、新規作成
+    const insertData: Database['public']['Tables']['users']['Insert'] = {
+      name: name.trim(),
+    };
     const { data: newUser, error: insertError } = await supabase
       .from('users')
-      .insert({ name: name.trim() })
+      .insert(insertData)
       .select()
       .single();
 
