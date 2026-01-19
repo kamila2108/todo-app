@@ -3,9 +3,5 @@ import { todoSchema } from "../schemas/todoSchema";
 
 export type TodoFormValues = z.infer<typeof todoSchema>;
 
-export interface Todo {
-  id: string;
-  title: string;
-  completed: boolean;
-  createdAt: string;
-}
+// Todo型は lib/types/todo.ts からインポートする
+export type { Todo } from "@/lib/types/todo";

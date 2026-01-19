@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Todo } from "../types/todo";
+import { Todo } from "@/lib/types/todo";
 import { TodoForm } from "../../../components/todo/TodoForm";
 import { TodoList } from "../../../components/todo/TodoList";
 
@@ -37,7 +37,7 @@ export const TodoApp: React.FC<TodoAppProps> = ({ initialTodos }) => {
 
   const handleCreated = async (): Promise<void> => {
     // Todo作成後にTodoListを更新するためのトリガーを更新
-    setRefreshTrigger(prev => prev + 1);
+    setRefreshTrigger((prev: number) => prev + 1);
   };
 
   const handleToggled = async (id: string): Promise<void> => {
