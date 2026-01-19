@@ -545,17 +545,20 @@ Vercelのダッシュボードで、以下のいずれかの方法でプロジ�
    - 「Building...」「Deploying...」などのメッセージが表示されます
    - エラーメッセージが表示されていないか確認してください
 
-4. **⚠️ `npm warn deprecated` という警告メッセージが表示される場合**：
+4. **⚠️ 黄色い警告マーク（△！）と `npm warn deprecated` メッセージが表示される場合**：
    - **これは問題ありません！** 警告（warning）であり、エラーではありません
    - 以下のようなメッセージが表示されることがあります：
      ```
-     npm warn deprecated rimraf@3.0.2: ...
-     npm warn deprecated eslint@8.57.1: ...
+     npm warn deprecated rimraf@3.0.2: Rimraf versions prior to v4 are no longer supported
+     npm warn deprecated eslint@8.57.1: This version is no longer supported
      ```
    - **意味**: 使用しているパッケージの一部が古いバージョンであることを示しています
    - **影響**: アプリの動作には**全く影響しません**
    - **対処**: **何もする必要はありません**。そのままデプロイを続行してください
    - デプロイは正常に進行しています
+   - ⚠️ **重要**: 黄色い警告マーク（△！）が表示されていても、デプロイは**正常に進行しています**
+     - エラー（赤い×マーク）ではないので、そのまま待ってください
+     - 「Building」や「Deploying」と表示されていれば、デプロイは続行されています
 
 4. **デプロイ完了の確認**：
    - 「Build Completed」または「Ready」と表示されれば成功です！
