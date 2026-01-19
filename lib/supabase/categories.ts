@@ -48,13 +48,12 @@ export async function addCategory(userId: string, categoryName: string): Promise
     }
 
     // カテゴリを追加
-    const insertData: Database['public']['Tables']['categories']['Insert'] = {
-      user_id: userId,
-      name: trimmed,
-    };
     const { error } = await supabase
       .from('categories')
-      .insert(insertData);
+      .insert({
+        user_id: userId,
+        name: trimmed,
+      } as Database['public']['Tables']['categories']['Insert']);
 
     if (error) {
       console.error('カテゴリ追加エラー:', error);

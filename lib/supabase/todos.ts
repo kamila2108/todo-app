@@ -57,17 +57,16 @@ export async function createTodo(
   }
 ): Promise<Todo | null> {
   try {
-    const insertData: Database['public']['Tables']['todos']['Insert'] = {
-      user_id: userId,
-      title: todoData.title,
-      description: todoData.description || null,
-      due_date: todoData.dueDate ? todoData.dueDate.toISOString().split('T')[0] : null,
-      category: todoData.category || null,
-      completed: false,
-    };
     const { data, error } = await supabase
       .from('todos')
-      .insert(insertData)
+      .insert({
+        user_id: userId,
+        title: todoData.title,
+        description: todoData.description || null,
+        due_date: todoData.dueDate ? todoData.dueDate.toISOString().split('T')[0] : null,
+        category: todoData.category || null,
+        completed: false,
+      } as Database['public']['Tables']['todos']['Insert'])
       .select()
       .single();
 

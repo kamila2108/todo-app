@@ -31,12 +31,9 @@ export async function findOrCreateUser(name: string): Promise<User | null> {
     }
 
     // ユーザーが見つからない場合、新規作成
-    const insertData: Database['public']['Tables']['users']['Insert'] = {
-      name: name.trim(),
-    };
     const { data: newUser, error: insertError } = await supabase
       .from('users')
-      .insert(insertData)
+      .insert({ name: name.trim() } as Database['public']['Tables']['users']['Insert'])
       .select()
       .single();
 
