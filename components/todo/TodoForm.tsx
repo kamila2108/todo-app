@@ -8,10 +8,11 @@ import { createTodoAction } from '@/lib/actions/todo-actions';
 import { getCategories } from '@/lib/actions/category-actions';
 
 interface TodoFormProps {
+  userName: string;
   onSuccess?: () => void;
 }
 
-export function TodoForm({ onSuccess }: TodoFormProps): JSX.Element {
+export function TodoForm({ userName, onSuccess }: TodoFormProps): JSX.Element {
   const [categories, setCategories] = useState<string[]>([]);
   const [categoryInputMode, setCategoryInputMode] = useState<'select' | 'input'>('select');
   const [newCategory, setNewCategory] = useState<string>('');
@@ -38,13 +39,13 @@ export function TodoForm({ onSuccess }: TodoFormProps): JSX.Element {
   // カテゴリ一覧を取得
   useEffect(() => {
     const fetchCategories = async (): Promise<void> => {
-      const result = await getCategories();
+      const result = await getCategories(userName);
       if (result.success && result.data) {
         setCategories(result.data);
       }
     };
     void fetchCategories();
-  }, []);
+  }, [userName]);
 
   // カテゴリモード変更時の処理
   useEffect(() => {
@@ -61,13 +62,13 @@ export function TodoForm({ onSuccess }: TodoFormProps): JSX.Element {
       data.category = newCategory.trim();
     }
     
-    const result = await createTodoAction(data);
+    const result = await createTodoAction(userName, data);
     if (result.success) {
       reset();
       setNewCategory('');
       setCategoryInputMode('select');
       // カテゴリ一覧を再取得
-      const categoryResult = await getCategories();
+      const categoryResult = await getCategories(userName);
       if (categoryResult.success && categoryResult.data) {
         setCategories(categoryResult.data);
       }

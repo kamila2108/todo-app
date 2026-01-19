@@ -5,11 +5,12 @@ import { Todo } from '@/lib/types/todo';
 import { toggleTodoAction, deleteTodoAction } from '@/lib/actions/todo-actions';
 
 interface TodoItemProps {
+  userName: string;
   todo: Todo;
   onUpdate?: () => void;
 }
 
-export function TodoItem({ todo, onUpdate }: TodoItemProps): JSX.Element {
+export function TodoItem({ userName, todo, onUpdate }: TodoItemProps): JSX.Element {
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
   const [isToggling, setIsToggling] = useState<boolean>(false);
 
@@ -18,7 +19,7 @@ export function TodoItem({ todo, onUpdate }: TodoItemProps): JSX.Element {
     const scrollY = window.scrollY || window.pageYOffset || 0;
     
     setIsToggling(true);
-    const result = await toggleTodoAction({ id: todo.id });
+    const result = await toggleTodoAction(userName, { id: todo.id });
     setIsToggling(false);
     if (result.success) {
       // スクロール位置を復元
@@ -39,7 +40,7 @@ export function TodoItem({ todo, onUpdate }: TodoItemProps): JSX.Element {
       return;
     }
     setIsDeleting(true);
-    const result = await deleteTodoAction({ id: todo.id });
+    const result = await deleteTodoAction(userName, { id: todo.id });
     setIsDeleting(false);
     if (result.success) {
       onUpdate?.();

@@ -8,10 +8,11 @@ import { TodoItem } from './TodoItem';
 import { TodoFilterComponent } from './TodoFilter';
 
 interface TodoListProps {
+  userName: string;
   onRefresh?: () => void;
 }
 
-export function TodoList({ onRefresh }: TodoListProps): JSX.Element {
+export function TodoList({ userName, onRefresh }: TodoListProps): JSX.Element {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [filter, setFilter] = useState<TodoFilter>('all');
   const [selectedCategory, setSelectedCategory] = useState<string>('');
@@ -26,7 +27,7 @@ export function TodoList({ onRefresh }: TodoListProps): JSX.Element {
 
     setIsLoading(true);
     setError(null);
-    const result = await getTodos();
+    const result = await getTodos(userName);
     if (result.success && result.data) {
       setTodos(result.data);
     } else {
@@ -36,26 +37,26 @@ export function TodoList({ onRefresh }: TodoListProps): JSX.Element {
   };
 
   useEffect(() => {
-    fetchTodos();
+    void fetchTodos();
     const fetchCategories = async (): Promise<void> => {
-      const result = await getCategories();
+      const result = await getCategories(userName);
       if (result.success && result.data) {
         setCategories(result.data);
       }
     };
     void fetchCategories();
-  }, []);
+  }, [userName]);
 
   // Todo作成後にカテゴリ一覧を更新
   useEffect(() => {
     const fetchCategories = async (): Promise<void> => {
-      const result = await getCategories();
+      const result = await getCategories(userName);
       if (result.success && result.data) {
         setCategories(result.data);
       }
     };
     void fetchCategories();
-  }, [todos]);
+  }, [todos, userName]);
 
   // スクロール位置を復元
   useEffect(() => {
@@ -166,7 +167,7 @@ export function TodoList({ onRefresh }: TodoListProps): JSX.Element {
       ) : (
         <div className="space-y-3">
           {filteredTodos.map((todo) => (
-            <TodoItem key={todo.id} todo={todo} onUpdate={fetchTodos} />
+            <TodoItem key={todo.id} userName={userName} todo={todo} onUpdate={fetchTodos} />
           ))}
         </div>
       )}

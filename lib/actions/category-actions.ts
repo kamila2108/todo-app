@@ -1,6 +1,5 @@
-'use server';
-
-import { getAllCategories } from '@/lib/store/category-store';
+import { getCategoriesByUserId } from '@/lib/supabase/categories';
+import { getUserByName } from '@/lib/supabase/auth';
 
 export interface ActionResult<T> {
   success: boolean;
@@ -9,11 +8,19 @@ export interface ActionResult<T> {
 }
 
 /**
- * すべてのカテゴリを取得
+ * 指定されたユーザー名のすべてのカテゴリを取得
  */
-export async function getCategories(): Promise<ActionResult<string[]>> {
+export async function getCategories(userName: string): Promise<ActionResult<string[]>> {
   try {
-    const categories = getAllCategories();
+    const user = await getUserByName(userName);
+    if (!user) {
+      return {
+        success: false,
+        error: 'ユーザーが見つかりませんでした',
+      };
+    }
+
+    const categories = await getCategoriesByUserId(user.id);
     return {
       success: true,
       data: categories,
