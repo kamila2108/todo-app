@@ -59,13 +59,6 @@
 1. Supabaseダッシュボードの左側メニューから「SQL Editor」をクリック
 2. 「New query」をクリック
 
-**💡 初心者の方へ：**
-SQL実行の詳しい手順は、`SQL_EXECUTION_GUIDE.md` を参照してください。
-- コピー＆ペーストの方法
-- Runボタンの見つけ方
-- エラーが出たときの対処法
-など、詳しく説明しています。
-
 ### 3-2. ユーザーテーブルを作成
 
 以下のSQLをコピー＆ペーストして実行：
@@ -149,11 +142,6 @@ ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE todos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE categories ENABLE ROW LEVEL SECURITY;
 
--- 既存のポリシーがあれば削除（エラー回避のため）
-DROP POLICY IF EXISTS "Allow all operations on users" ON users;
-DROP POLICY IF EXISTS "Allow all operations on todos" ON todos;
-DROP POLICY IF EXISTS "Allow all operations on categories" ON categories;
-
 -- すべてのユーザーが読み書きできるように設定（簡易版）
 CREATE POLICY "Allow all operations on users" ON users
   FOR ALL USING (true) WITH CHECK (true);
@@ -165,233 +153,29 @@ CREATE POLICY "Allow all operations on categories" ON categories
   FOR ALL USING (true) WITH CHECK (true);
 ```
 
-**💡 エラーが出た場合：**
-もし「policy already exists」というエラーが出た場合は、上記のSQL（`DROP POLICY IF EXISTS`を含む）を実行すれば解決します。
-これは既存のポリシーを削除してから再作成するため、エラーが発生しません。
-
 **注意：** 本番環境では、より厳密なセキュリティポリシーを設定してください。
 
 ---
 
 ## 📦 ステップ5: 環境変数の設定
 
-### 💡 環境変数とは？
+### 5-1. `.env.local` ファイルを作成
 
-**環境変数**とは、アプリケーションが動作するために必要な「設定情報」を保存する仕組みです。
+プロジェクトのルートフォルダ（`package.json`がある場所）に `.env.local` ファイルを作成します。
 
-**簡単に言うと：**
-- SupabaseのURL（住所）とキー（パスワードのようなもの）を保存する
-- これにより、アプリがSupabaseデータベースに接続できるようになる
+### 5-2. 環境変数を追加
 
-**なぜ必要か：**
-- アプリが「どのSupabaseプロジェクトに接続するか」を知るため
-- 機密情報（キー）をコードに直接書かずに、別ファイルで管理するため
+`.env.local` ファイルに以下を追加（実際の値に置き換えてください）：
 
----
-
-### 5-1. プロジェクトのルートフォルダを確認
-
-まず、プロジェクトのルートフォルダ（`package.json`がある場所）を見つけます。
-
-**確認方法：**
-
-1. **エクスプローラーでフォルダを開く**
-   - プロジェクトのフォルダは **`C:\Users\tokam\Downloads\1`** です
-   - エクスプローラーでこのパスを開いてください
-   - または、ファイルエクスプローラーのアドレスバーに `C:\Users\tokam\Downloads\1` と入力してEnterキーを押す
-   
-2. **`package.json`というファイルがあるか確認**
-   - このファイルがあるフォルダが「ルートフォルダ」です
-   - **`package.json`ファイルは必ず存在します**（このプロジェクトに含まれています）
-
-**💡 `package.json`が見つからない場合の対処法：**
-
-**方法1: エクスプローラーで確認**
-1. エクスプローラーを開く
-2. アドレスバーに **`C:\Users\tokam\Downloads\1`** と入力してEnterキーを押す
-3. フォルダ内のファイル一覧を確認
-4. **`package.json`** というファイル名を探す
-   - ファイル名で並び替えると見つけやすいです（「表示」→「名前で並び替え」）
-
-**方法2: エクスプローラーで検索する**
-1. エクスプローラーで **`C:\Users\tokam\Downloads\1`** フォルダを開く
-2. 右上の検索ボックスに **`package.json`** と入力
-3. 検索結果に表示されるはずです
-
-**方法3: PowerShellで確認する**
-1. PowerShellを開く（Windowsキー → 「PowerShell」と入力 → Enter）
-2. 以下のコマンドを実行：
-   ```powershell
-   cd C:\Users\tokam\Downloads\1
-   Get-ChildItem package.json
-   ```
-3. `package.json` と表示されれば、ファイルは存在します
-
-**方法4: 現在のフォルダの場所を確認する**
-- 現在の作業フォルダが **`C:\Users\tokam\Downloads\1`** であれば、ここが「ルートフォルダ」です
-- このフォルダに `.env.local` ファイルを作成してください
-
-**✅ 確認できたら：**
-- `package.json`ファイルが見つかったフォルダが「ルートフォルダ」です
-- このフォルダに `.env.local` ファイルを作成してください
-
----
-
-### 5-2. `.env.local` ファイルを作成
-
-プロジェクトのルートフォルダに `.env.local` というファイルを作成します。
-
-**⚠️ 重要：** ファイル名は **`.env.local`** です（最初にピリオド（`.`）がつきます）
-
-#### 方法1: メモ帳で作成する（初心者向け・推奨）
-
-1. **メモ帳を開く**
-   - Windowsキー → 「メモ帳」と入力 → Enterキー
-
-2. **Supabaseの設定情報を貼り付け**
-   
-   ステップ2で取得した情報を使って、以下を入力してください：
-   
-   ```
-   NEXT_PUBLIC_SUPABASE_URL=ここにProject URLを貼り付け
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=ここにanon public keyを貼り付け
-   ```
-   
-   **例（実際の値に置き換えてください）：**
-   ```
-   NEXT_PUBLIC_SUPABASE_URL=https://abcdefghijklmnop.supabase.co
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFiY2RlZmdoaWprbG1ub3AiLCJyb2xlIjoiYW5vbiIsImlhdCI6MTYxNjIzOTAyMiwiZXhwIjoxOTMxODE1MDIyfQ.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-   ```
-   
-   **💡 コピー方法：**
-   - Supabaseダッシュボードの「Settings」→「API」を開く
-   - 「Project URL」の値をコピー → メモ帳の `NEXT_PUBLIC_SUPABASE_URL=` の後ろに貼り付け
-   - 「anon public」キーの値をコピー → メモ帳の `NEXT_PUBLIC_SUPABASE_ANON_KEY=` の後ろに貼り付け
-
-3. **ファイルを保存**
-   - 「ファイル」→「名前を付けて保存」をクリック
-   - **保存先**：プロジェクトのルートフォルダ（`package.json`がある場所）を選択
-   - **ファイル名**：`.env.local` と入力
-     - ⚠️ 注意：最初にピリオド（`.`）を忘れずに入力してください
-   - **ファイルの種類**：「すべてのファイル（*.*）」を選択
-     - 「テキスト文書（*.txt）」のままでは `.env.local.txt` になってしまいます
-   - 「保存」をクリック
-
-**💡 ファイル名の注意点：**
-- ✅ 正しい：`.env.local`
-- ❌ 間違い：`env.local`（ピリオドがない）
-- ❌ 間違い：`.env.local.txt`（拡張子がついている）
-
-#### 方法2: PowerShellで作成する（上級者向け）
-
-PowerShellで以下のコマンドを実行：
-
-```powershell
-# プロジェクトのルートフォルダに移動（必要に応じて）
-cd C:\Users\tokam\Downloads\1
-
-# .env.localファイルを作成
-New-Item -Path ".env.local" -ItemType File -Force
-
-# ファイルを開いて編集（メモ帳で開く）
-notepad .env.local
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://xxxxx.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
 
-メモ帳が開いたら、上記「方法1」の手順2に従って内容を入力し、保存してください。
-
----
-
-### 5-3. ファイルの内容を確認
-
-`.env.local` ファイルが正しく作成されたか確認します。
-
-**確認方法：**
-
-1. **エクスプローラーでプロジェクトのルートフォルダを開く**
-2. **`.env.local` ファイルがあるか確認**
-   - ⚠️ 注意：ファイル名の最初がピリオド（`.`）なので、一部のエクスプローラー設定では表示されない場合があります
-   - 「表示」→「ファイル名拡張子」と「隠しファイル」にチェックを入れてみてください
-
-3. **メモ帳でファイルを開いて内容を確認**
-   - ファイルを右クリック → 「プログラムから開く」→「メモ帳」
-
-**正しい内容の例：**
-```
-NEXT_PUBLIC_SUPABASE_URL=https://abcdefghijklmnop.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFiY2RlZmdoaWprbG1ub3AiLCJyb2xlIjoiYW5vbiIsImlhdCI6MTYxNjIzOTAyMiwiZXhwIjoxOTMxODE1MDIyfQ.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-```
-
-**確認ポイント：**
-- ✅ 2行になっている
-- ✅ `NEXT_PUBLIC_SUPABASE_URL=` の後ろにSupabaseのURLがある（`https://`で始まる）
-- ✅ `NEXT_PUBLIC_SUPABASE_ANON_KEY=` の後ろにキーがある（長い文字列）
-- ✅ 各行の末尾に余計なスペースや改行がない
-
----
-
-### 5-4. 重要事項の説明
-
-**なぜ `NEXT_PUBLIC_` という名前なのか：**
-- Next.jsでは、ブラウザ側（クライアント側）で使用する環境変数には `NEXT_PUBLIC_` というプレフィックス（接頭辞）が必要です
-- これがないと、ブラウザ側で環境変数を読み込めません
-
-**なぜ別ファイルに保存するのか：**
-- 機密情報（キー）をコードに直接書かないため
-- `.gitignore` という設定により、このファイルはGitHubにアップロードされません（安全）
-
-**ファイル名が `.env.local` なのはなぜ：**
-- `.env` = 環境変数（Environment Variables）を意味する
-- `.local` = ローカル環境（自分のPC）で使用するという意味
-- これにより、開発環境と本番環境で異なる設定を使い分けられます
-
----
-
-### 5-5. トラブルシューティング
-
-#### Q1: ファイルが見つからない
-
-**原因：** ファイル名の最初のピリオド（`.`）が見えない、または保存先が間違っている
-
-**解決方法：**
-1. エクスプローラーの「表示」→「ファイル名拡張子」と「隠しファイル」にチェックを入れる
-2. 保存先がプロジェクトのルートフォルダ（`package.json`がある場所）か確認
-3. PowerShellで `Get-ChildItem .env.local` と実行して、ファイルが存在するか確認
-
-#### Q2: ファイル名が `.env.local.txt` になってしまった
-
-**原因：** メモ帳で保存する際に「ファイルの種類」を「すべてのファイル（*.*）」にしなかった
-
-**解決方法：**
-1. `.env.local.txt` というファイルを削除
-2. もう一度「方法1」の手順で、今度は「ファイルの種類」を「すべてのファイル（*.*）」にして保存
-
-#### Q3: SupabaseのURLやキーがわからない
-
-**解決方法：**
-- ステップ2「APIキーとURLの取得」を参照してください
-- Supabaseダッシュボード → 「Settings」→「API」で確認できます
-
-#### Q4: ファイルを開いても何も表示されない
-
-**原因：** 保存時に内容が消えてしまった可能性
-
-**解決方法：**
-- もう一度内容を入力して保存してください
-- 保存する前に、内容が正しく入力されているか確認してください
-
----
-
-### ✅ 完了の確認
-
-以下の条件を満たしていれば完了です：
-
-1. ✅ `.env.local` ファイルがプロジェクトのルートフォルダに存在する
-2. ✅ ファイルの中に2行の設定が書かれている
-3. ✅ `NEXT_PUBLIC_SUPABASE_URL=` の後ろにSupabaseのURLがある
-4. ✅ `NEXT_PUBLIC_SUPABASE_ANON_KEY=` の後ろにキーがある
-
-**次のステップ：**
-環境変数の設定が完了したら、Supabaseクライアントライブラリをインストールして、アプリを起動してください。
+**重要：**
+- `NEXT_PUBLIC_` プレフィックスは必須（クライアント側で使用するため）
+- 実際のSupabase URLとキーに置き換えてください
+- このファイルは`.gitignore`に含まれているため、GitHubにアップロードされません
 
 ---
 

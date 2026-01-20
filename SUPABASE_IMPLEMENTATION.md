@@ -114,17 +114,10 @@ CREATE INDEX IF NOT EXISTS idx_categories_user_id ON categories(user_id);
 
 **認証ポリシー（簡易版）：**
 ```sql
--- Row Level Securityを有効化
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE todos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE categories ENABLE ROW LEVEL SECURITY;
 
--- 既存のポリシーがあれば削除（エラー回避のため）
-DROP POLICY IF EXISTS "Allow all operations on users" ON users;
-DROP POLICY IF EXISTS "Allow all operations on todos" ON todos;
-DROP POLICY IF EXISTS "Allow all operations on categories" ON categories;
-
--- すべてのユーザーが読み書きできるように設定（簡易版）
 CREATE POLICY "Allow all operations on users" ON users
   FOR ALL USING (true) WITH CHECK (true);
 
@@ -135,10 +128,40 @@ CREATE POLICY "Allow all operations on categories" ON categories
   FOR ALL USING (true) WITH CHECK (true);
 ```
 
-**💡 エラーが出た場合：**
-もし「policy already exists」というエラーが出た場合は、上記のSQL（`DROP POLICY IF EXISTS`を含む）を実行すれば解決します。
-
 ### ステップ5: アプリを起動
+
+#### 5-1. PowerShellを開く
+
+1. **Windowsキー**を押す
+2. 「**PowerShell**」と入力
+3. 「**Windows PowerShell**」をクリックして開く
+
+**💡 重要：**
+- 必ず**新しいPowerShellウィンドウ**を開いてください
+- 以前開いていたPowerShellがある場合は、閉じてから新しく開いてください
+
+#### 5-2. プロジェクトフォルダに移動
+
+PowerShellで以下のコマンドを実行して、プロジェクトフォルダに移動します：
+
+```powershell
+cd C:\Users\tokam\Downloads\1
+```
+
+**💡 コマンドのコピー方法：**
+- 上記のコマンドをコピー（`cd C:\Users\tokam\Downloads\1` の部分だけ）
+- PowerShellに貼り付け（右クリック → 貼り付け、または `Ctrl+V`）
+- **Enterキー**を押す
+
+**確認方法：**
+- PowerShellの画面に `C:\Users\tokam\Downloads\1` と表示されればOK
+- または、以下のコマンドで確認できます：
+  ```powershell
+  pwd
+  ```
+  （`pwd` と入力してEnterキーを押すと、現在のフォルダが表示されます）
+
+#### 5-3. 開発サーバーを起動
 
 PowerShellで以下のコマンドを実行：
 
@@ -146,7 +169,171 @@ PowerShellで以下のコマンドを実行：
 npm run dev
 ```
 
-ブラウザで `http://localhost:3000` を開いて動作確認してください。
+**💡 コマンドのコピー方法：**
+- `npm run dev` の部分だけをコピー
+- PowerShellに貼り付け
+- **Enterキー**を押す
+
+**実行後の表示：**
+
+正常に起動すると、以下のようなメッセージが表示されます：
+
+```
+> todo-app@0.1.0 dev
+> next dev
+
+  ▲ Next.js 14.x.x
+  - Local:        http://localhost:3000
+  - Ready in X.Xs
+```
+
+**✅ 成功のサイン：**
+- `Local: http://localhost:3000` と表示される
+- `Ready in X.Xs` と表示される
+- エラーメッセージが表示されない
+
+**⚠️ 注意：**
+- PowerShellのウィンドウは**閉じないでください**
+- このウィンドウを閉じると、開発サーバーが停止します
+- サーバーを停止したい場合は、`Ctrl+C` を押してください
+
+#### 5-4. ブラウザでアプリを開く
+
+1. **ブラウザを開く**（Chrome、Edge、Firefoxなど、どのブラウザでもOK）
+
+2. **アドレスバーに以下を入力：**
+   ```
+   http://localhost:3000
+   ```
+   - または、`localhost:3000` だけでもOK
+
+3. **Enterキー**を押す
+
+**💡 アドレスバーの見つけ方：**
+- ブラウザの上部にある、URLを入力する欄です
+- 通常は白い長方形のボックスで、現在のページのURLが表示されています
+
+**✅ 成功のサイン：**
+- Todoアプリの画面が表示される
+- 名前入力画面が表示される（初回の場合）
+- エラーページが表示されない
+
+#### 5-5. 動作確認
+
+**基本的な動作確認：**
+
+1. **名前を入力**
+   - 名前入力画面で、任意の名前を入力（例：「テストユーザー」）
+   - 「開始」ボタンをクリック
+
+2. **Todo画面が表示される**
+   - 「〇〇さんのTodo」というタイトルが表示される
+   - 左側に入力エリア、右側にTodo一覧エリアが表示される
+
+3. **Todoを作成**
+   - タイトルを入力して「Todoを作成」ボタンをクリック
+   - 右側のTodo一覧に作成したTodoが表示される
+
+**✅ 正常に動作している場合：**
+- Todoが作成できる
+- Todoのチェックボックスをクリックできる
+- Todoを削除できる
+- エラーメッセージが表示されない
+
+#### 5-6. トラブルシューティング
+
+##### Q1: `npm run dev` を実行しても何も表示されない
+
+**原因：** コマンドが実行されていない、またはエラーが発生している可能性があります。
+
+**解決方法：**
+1. PowerShellで `npm run dev` と入力してEnterキーを押したか確認
+2. エラーメッセージが表示されていないか確認
+3. プロジェクトフォルダに正しく移動しているか確認（`cd C:\Users\tokam\Downloads\1`）
+
+##### Q2: `npm: コマンドが見つかりません` というエラーが出る
+
+**原因：** Node.jsがインストールされていない、またはPATHが設定されていません。
+
+**解決方法：**
+1. Node.jsがインストールされているか確認：
+   ```powershell
+   node --version
+   ```
+   - バージョン番号が表示されればOK
+   - エラーが出る場合は、Node.jsをインストールしてください（`SETUP_GUIDE.md`のステップ2を参照）
+
+2. PowerShellを閉じて、再度開いてから試してください
+
+##### Q3: `Cannot find module '@supabase/supabase-js'` というエラーが出る
+
+**原因：** Supabaseライブラリがインストールされていません。
+
+**解決方法：**
+1. PowerShellで `Ctrl+C` を押して開発サーバーを停止
+2. 以下のコマンドを実行：
+   ```powershell
+   npm install @supabase/supabase-js
+   ```
+3. インストールが完了したら、再度 `npm run dev` を実行
+
+##### Q4: ブラウザで「接続できません」や「ERR_CONNECTION_REFUSED」と表示される
+
+**原因：** 開発サーバーが起動していない、または別のポートで起動している可能性があります。
+
+**解決方法：**
+1. PowerShellで開発サーバーが起動しているか確認
+   - `Local: http://localhost:3000` と表示されているか確認
+2. 開発サーバーが起動していない場合は、`npm run dev` を実行
+3. 別のポート（例：`http://localhost:3001`）で起動している場合は、そのURLを開いてください
+
+##### Q5: ブラウザで「Supabase環境変数が設定されていません」という警告が出る
+
+**原因：** `.env.local` ファイルが作成されていない、または環境変数が正しく設定されていません。
+
+**解決方法：**
+1. `.env.local` ファイルがプロジェクトのルートフォルダにあるか確認
+2. ファイルの中身が正しいか確認（`NEXT_PUBLIC_SUPABASE_URL` と `NEXT_PUBLIC_SUPABASE_ANON_KEY` が設定されているか）
+3. 開発サーバーを再起動（`Ctrl+C` で停止してから `npm run dev` で再起動）
+
+##### Q6: 名前を入力してもTodo画面に進まない
+
+**原因：** Supabaseへの接続に失敗している可能性があります。
+
+**解決方法：**
+1. ブラウザの開発者ツール（F12キー）を開く
+2. 「Console」タブをクリック
+3. エラーメッセージを確認
+4. `.env.local` ファイルの設定を確認
+5. Supabaseプロジェクトが正しく作成されているか確認
+
+#### 5-7. 開発サーバーを停止する方法
+
+開発サーバーを停止したい場合は：
+
+1. **PowerShellウィンドウに戻る**
+2. **`Ctrl+C` を押す**
+3. 確認メッセージが表示されたら、`Y` を押してEnterキー
+
+**💡 注意：**
+- 開発サーバーを停止すると、ブラウザでアプリを開けなくなります
+- 再度アプリを使いたい場合は、`npm run dev` を実行してください
+
+---
+
+**✅ 完了の確認：**
+
+以下の条件を満たしていれば、アプリの起動は成功です：
+
+1. ✅ PowerShellで `npm run dev` を実行した
+2. ✅ `Local: http://localhost:3000` と表示された
+3. ✅ ブラウザで `http://localhost:3000` を開いた
+4. ✅ Todoアプリの画面が表示された
+5. ✅ 名前を入力してTodo画面に進めた
+
+**次のステップ：**
+- アプリが正常に起動したら、実際にTodoを作成・編集・削除して動作を確認してください
+- 複数デバイスから同じ名前でログインして、データが同期されることを確認してください
 
 ---
 

@@ -3,7 +3,6 @@
  */
 
 import { supabase } from './client';
-import type { Database } from './database.types';
 
 /**
  * 指定されたユーザーのすべてのカテゴリを取得
@@ -53,7 +52,7 @@ export async function addCategory(userId: string, categoryName: string): Promise
       .insert({
         user_id: userId,
         name: trimmed,
-      } as Database['public']['Tables']['categories']['Insert']);
+      });
 
     if (error) {
       console.error('カテゴリ追加エラー:', error);

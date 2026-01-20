@@ -3,7 +3,6 @@
  */
 
 import { supabase } from './client';
-import type { Database } from './database.types';
 import type { Todo } from '@/lib/types/todo';
 
 /**
@@ -66,7 +65,7 @@ export async function createTodo(
         due_date: todoData.dueDate ? todoData.dueDate.toISOString().split('T')[0] : null,
         category: todoData.category || null,
         completed: false,
-      } as Database['public']['Tables']['todos']['Insert'])
+      })
       .select()
       .single();
 

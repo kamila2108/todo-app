@@ -16,48 +16,17 @@ export default function Page() {
   useEffect(() => {
     // ページ読み込み時に名前を確認
     const loadUser = async (): Promise<void> => {
-      // クライアント側でのみlocalStorageを確認
-      if (typeof window === 'undefined') {
-        setIsLoading(false);
-        return;
-      }
-
-      // デバッグ用ログ（開発環境のみ）
-      if (process.env.NODE_ENV === 'development') {
-        console.log('🔍 [DEBUG] ページ読み込み開始');
-        const hasName = hasUserName();
-        console.log('🔍 [DEBUG] hasUserName():', hasName);
-      }
-
       if (hasUserName()) {
         const name = getUserName();
         if (name) {
-          if (process.env.NODE_ENV === 'development') {
-            console.log('🔍 [DEBUG] localStorageから名前を取得:', name);
-          }
           setUserName(name);
           // Todoデータを取得
           setIsLoadingTodos(true);
-          try {
-            const result = await getTodos(name);
-            if (process.env.NODE_ENV === 'development') {
-              console.log('🔍 [DEBUG] getTodos結果:', result);
-            }
-            if (result.success && result.data) {
-              setInitialTodos(result.data);
-            } else {
-              // エラーが発生した場合でも、名前は設定されているのでTodo画面を表示
-              console.warn('⚠️ Todoの取得に失敗しましたが、名前入力画面はスキップします');
-            }
-          } catch (error) {
-            console.error('❌ Todo取得エラー:', error);
-            // エラーが発生した場合でも、名前は設定されているのでTodo画面を表示
+          const result = await getTodos(name);
+          if (result.success && result.data) {
+            setInitialTodos(result.data);
           }
           setIsLoadingTodos(false);
-        }
-      } else {
-        if (process.env.NODE_ENV === 'development') {
-          console.log('🔍 [DEBUG] 名前が保存されていないため、名前入力画面を表示');
         }
       }
       setIsLoading(false);
