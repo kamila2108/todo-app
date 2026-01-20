@@ -1,363 +1,268 @@
 # 🔍 名前入力画面が表示されない問題のトラブルシューティング
 
-## 📋 問題の概要
+## ❌ 問題の症状
 
-デプロイ後のTodoアプリで、名前入力画面が表示されず、Todo一覧画面が直接表示される（または真っ白になる）問題。
+- デプロイしたTodoアプリにアクセスすると、名前入力画面が表示されない
+- Todo一覧画面がいきなり表示される
+- 本来は初回アクセス時に名前入力画面が表示されるはず
 
 ---
 
-## 🔍 原因候補
+## 🔍 原因候補と確認ポイント
 
-### 原因1: Supabase接続エラー（最も可能性が高い）
+### 原因1: ブラウザのlocalStorageに既に名前が保存されている（最も可能性が高い）
 
-**なぜ発生するか：**
-- Vercelの環境変数が正しく設定されていない
-- Supabaseへの接続に失敗している
-- `getTodos()`が失敗してエラーが発生し、画面が表示されない
+**なぜ起こるのか：**
+- ローカルで開発中に名前を入力した場合、ブラウザの`localStorage`に保存されます
+- デプロイ先のサイトでも、**同じブラウザ**でアクセスすると、保存された名前が読み込まれます
+- その結果、名前入力画面をスキップしてTodo画面が表示されます
 
 **確認方法：**
-1. ブラウザの開発者ツール（F12キー）を開く
-2. 「Console」タブを確認
-3. エラーメッセージを確認
-   - `Supabase環境変数が設定されていません` と表示されていれば環境変数の問題
-   - `Failed to fetch` や `Network error` が表示されていれば接続エラー
+1. **ブラウザの開発者ツールを開く**
+   - Windows: `F12`キーまたは`Ctrl + Shift + I`
+   - Mac: `Cmd + Option + I`
+2. **「Application」タブ（Chrome/Edge）または「Storage」タブ（Firefox）をクリック**
+3. **左側のメニューから「Local Storage」→ サイトのURLをクリック**
+   - 例：`https://your-project.vercel.app`
+4. **`todo-app-user-name`というキーが存在するか確認**
+   - 存在していれば、値（名前）が表示されます
 
-### 原因2: エラーハンドリングの不備
-
-**なぜ発生するか：**
-- `getTodos()`が失敗した時にエラーが発生
-- エラーが適切に処理されず、画面が表示されない
-- `isLoading`が永遠に`true`のままになる可能性
-
-### 原因3: ハイドレーションエラー
-
-**なぜ発生するか：**
-- サーバーサイドとクライアントサイドでレンダリング結果が異なる
-- `localStorage`はクライアントサイドでのみ利用可能のため、SSR時に問題が発生
-
-### 原因4: ブラウザのキャッシュ
-
-**なぜ発生するか：**
-- 以前のバージョンのアプリがキャッシュされている
-- 古いコードが実行されている
+**解決方法：**
+- **方法1: localStorageをクリアする（推奨）**
+  1. 開発者ツールの「Application」タブを開く
+  2. 「Local Storage」→ サイトのURLをクリック
+  3. `todo-app-user-name`を右クリック → 「Delete」をクリック
+  4. ページをリロード（`F5`キー）
+  
+- **方法2: シークレットウィンドウ（プライベートブラウジング）で確認**
+  - 新しいシークレットウィンドウで開く
+  - `localStorage`が空の状態なので、名前入力画面が表示されます
 
 ---
 
-## ✅ 確認すべきポイントのチェックリスト
+### 原因2: `getTodos`が失敗している（Supabase接続エラー・404エラー）
 
-### チェック1: 環境変数の設定
+**なぜ起こるのか：**
+- Supabaseの環境変数が正しく設定されていない（最も可能性が高い）
+- または、Supabaseデータベースへの接続に失敗している
+- しかし、`localStorage`に名前が保存されているため、Todo画面が表示される
 
-- [ ] Vercelのダッシュボードで環境変数を確認
-  - 「Settings」→「Environment Variables」を開く
-  - `NEXT_PUBLIC_SUPABASE_URL` が設定されているか確認
-  - `NEXT_PUBLIC_SUPABASE_ANON_KEY` が設定されているか確認
-  - 両方の値が正しいか確認（Supabaseダッシュボードと一致しているか）
+**症状：**
+- `Failed to load resource: the server responded with a status of 404 ()`というエラーが表示される
+- Supabaseへのリクエストが失敗している
 
-### チェック2: ブラウザのコンソールエラー
+**確認方法：**
+1. **ブラウザの開発者ツールを開く**（`F12`キー）
+2. **「Console」タブを開く**
+3. **エラーメッセージがないか確認**
+   - `404`エラーが表示されている場合は、環境変数の問題
+   - 赤色のエラーメッセージがある場合は、エラー内容を確認
+4. **「Network」タブを開く**
+   - `supabase.co`へのリクエストが404エラーになっていないか確認
 
-- [ ] ブラウザの開発者ツール（F12キー）を開く
-- [ ] 「Console」タブを確認
-- [ ] エラーメッセージがあるか確認
-  - あれば、エラーメッセージをメモ
-
-### チェック3: ネットワークエラー
-
-- [ ] ブラウザの開発者ツール（F12キー）を開く
-- [ ] 「Network」タブを確認
-- [ ] リクエストが失敗しているか確認
-  - 赤色のリクエストがないか確認
-  - `api/todos` へのリクエストがあるか確認
-
-### チェック4: デプロイログ
-
-- [ ] Vercelのダッシュボードでデプロイログを確認
-- [ ] ビルドエラーがないか確認
-- [ ] ランタイムエラーがないか確認
-
-### チェック5: ブラウザのキャッシュ
-
-- [ ] ブラウザのキャッシュをクリア
-  - `Ctrl + Shift + Delete` でキャッシュをクリア
-  - または、シークレットモード（プライベートモード）で確認
+**解決方法：**
+- **詳細は`FIX_404_ERROR.md`を参照してください**
+- Vercelの環境変数が正しく設定されているか確認（`DEPLOY_SUPABASE.md`のステップ2を参照）
+- 環境変数を設定した後、**必ず再デプロイを実行**
+- Supabaseダッシュボードでデータベースが正常に動作しているか確認
 
 ---
 
-## 🛠️ 修正方法
+### 原因3: コードのバグ（型エラーやロジックエラー）
 
-### 修正1: エラーハンドリングの改善
+**なぜ起こるのか：**
+- `app/page.tsx`の条件分岐が正しく動作していない可能性
+- または、Reactのレンダリングタイミングの問題
 
-`app/page.tsx`を修正して、エラー時にも適切に処理するようにします：
+**確認方法：**
+1. **ブラウザの開発者ツールを開く**（`F12`キー）
+2. **「Console」タブを開く**
+3. **以下のコードを実行して、localStorageの値を確認：**
+   ```javascript
+   localStorage.getItem('todo-app-user-name')
+   ```
+   - `null`が返されれば、名前は保存されていない
+   - 文字列が返されれば、名前が保存されている
+
+---
+
+## ✅ 確認チェックリスト
+
+デプロイしたサイトで、以下を確認してください：
+
+### チェック1: シークレットウィンドウで確認
+
+- [ ] **新しいシークレットウィンドウ（プライベートブラウジング）でサイトを開く**
+  - Chrome/Edge: `Ctrl + Shift + N`
+  - Firefox: `Ctrl + Shift + P`
+- [ ] **名前入力画面が表示されるか確認**
+  - ✅ 表示される → 問題なし（通常のブラウザで`localStorage`に名前が保存されているだけ）
+  - ❌ 表示されない → コードの問題の可能性
+
+### チェック2: localStorageを確認
+
+- [ ] **開発者ツール（F12）を開く**
+- [ ] **「Application」タブ → 「Local Storage」を確認**
+- [ ] **`todo-app-user-name`というキーが存在するか確認**
+  - ✅ 存在する → 名前入力画面がスキップされる原因
+  - ❌ 存在しない → コードの問題の可能性
+
+### チェック3: コンソールエラーを確認
+
+- [ ] **開発者ツール（F12）の「Console」タブを開く**
+- [ ] **エラーメッセージ（赤色）がないか確認**
+  - ✅ エラーなし → localStorageの問題の可能性が高い
+  - ❌ エラーあり → エラー内容を確認
+
+### チェック4: ネットワーク接続を確認
+
+- [ ] **開発者ツール（F12）の「Network」タブを開く**
+- [ ] **Supabaseへのリクエストが成功しているか確認**
+  - `supabase.co`へのリクエストが200（成功）か確認
+
+---
+
+## 🔧 修正例（初心者向け）
+
+### 修正1: デバッグ用のコンソールログを追加
+
+問題を特定するために、`app/page.tsx`にデバッグログを追加します：
 
 ```typescript
-'use client';
-
-import { useState, useEffect } from 'react';
-import { TodoApp } from "@/features/todo/components/TodoApp";
-import { NameInput } from "@/components/auth/NameInput";
-import { Todo } from "@/lib/types/todo";
-import { getTodos } from "@/lib/actions/todo-actions";
-import { getUserName, hasUserName, saveUserName } from "@/lib/utils/user-storage";
-
-export default function Page() {
-  const [userName, setUserName] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [initialTodos, setInitialTodos] = useState<Todo[]>([]);
-  const [isLoadingTodos, setIsLoadingTodos] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null); // エラー状態を追加
-
-  useEffect(() => {
-    // ページ読み込み時に名前を確認
-    const loadUser = async (): Promise<void> => {
-      try {
-        if (hasUserName()) {
-          const name = getUserName();
-          if (name) {
-            setUserName(name);
-            // Todoデータを取得
-            setIsLoadingTodos(true);
-            setError(null); // エラーをリセット
-            const result = await getTodos(name);
-            if (result.success && result.data) {
-              setInitialTodos(result.data);
-            } else {
-              // Todoの取得に失敗した場合でも、名前入力画面は表示しない
-              // （既にログイン済みのため）
-              console.error('Todo取得エラー:', result.error);
-              setInitialTodos([]); // 空の配列を設定
-            }
-            setIsLoadingTodos(false);
-          }
+useEffect(() => {
+  const loadUser = async (): Promise<void> => {
+    console.log('🔍 [DEBUG] ページ読み込み開始');
+    const hasName = hasUserName();
+    console.log('🔍 [DEBUG] hasUserName():', hasName);
+    
+    if (hasName) {
+      const name = getUserName();
+      console.log('🔍 [DEBUG] getUserName():', name);
+      
+      if (name) {
+        setUserName(name);
+        console.log('🔍 [DEBUG] userNameを設定:', name);
+        
+        setIsLoadingTodos(true);
+        const result = await getTodos(name);
+        console.log('🔍 [DEBUG] getTodos結果:', result);
+        
+        if (result.success && result.data) {
+          setInitialTodos(result.data);
         }
-      } catch (err) {
-        // 予期しないエラーが発生した場合
-        console.error('ユーザー読み込みエラー:', err);
-        setError(err instanceof Error ? err.message : 'エラーが発生しました');
-        // エラーが発生しても、名前入力画面を表示できるようにする
-        if (hasUserName()) {
-          const name = getUserName();
-          if (name) {
-            setUserName(name);
-            setInitialTodos([]);
-          }
-        }
-      } finally {
-        setIsLoading(false);
         setIsLoadingTodos(false);
       }
-    };
-    void loadUser();
-  }, []);
-
-  const handleStart = async (name: string): Promise<void> => {
-    try {
-      // 名前を保存
-      saveUserName(name);
-      setUserName(name);
-      setError(null); // エラーをリセット
-      // Todoデータを取得
-      setIsLoadingTodos(true);
-      const result = await getTodos(name);
-      if (result.success && result.data) {
-        setInitialTodos(result.data);
-      } else {
-        console.error('Todo取得エラー:', result.error);
-        setError(result.error || 'Todoの取得に失敗しました');
-        setInitialTodos([]); // 空の配列を設定
-      }
-    } catch (err) {
-      console.error('Todo取得エラー:', err);
-      setError(err instanceof Error ? err.message : 'エラーが発生しました');
-      setInitialTodos([]);
-    } finally {
-      setIsLoadingTodos(false);
     }
+    setIsLoading(false);
+    console.log('🔍 [DEBUG] ページ読み込み完了');
   };
+  void loadUser();
+}, []);
+```
 
-  // ローディング中は何も表示しない（またはローディング表示）
-  if (isLoading) {
-    return (
-      <main 
-        className="w-full max-w-7xl mx-auto p-4 md:p-6"
-        style={{ 
-          backgroundColor: 'var(--bg-main)',
-          minHeight: '100vh'
-        }}
-      >
-        <div className="text-center py-20">
-          <p style={{ color: '#666666' }}>読み込み中...</p>
-        </div>
-      </main>
-    );
-  }
+**使い方：**
+1. 上記のコードを`app/page.tsx`の`useEffect`内に置き換える
+2. サイトを開く
+3. 開発者ツール（F12）の「Console」タブでログを確認
+4. どの段階で問題が発生しているか確認
 
-  // 名前が入力されていない場合は名前入力画面を表示
-  if (!userName) {
-    return (
-      <main 
-        className="w-full max-w-7xl mx-auto p-4 md:p-6 flex items-center justify-center"
-        style={{ 
-          backgroundColor: 'var(--bg-main)',
-          minHeight: '100vh'
-        }}
-      >
-        <div
-          className="w-full rounded-xl shadow-lg p-8 md:p-12"
-          style={{ 
-            backgroundColor: 'var(--bg-card)',
-            border: '1px solid var(--border-default)',
-            maxWidth: '600px'
-          }}
-        >
-          <NameInput onStart={handleStart} />
-        </div>
-      </main>
-    );
-  }
+### 修正2: ログアウト機能を追加（名前をリセット）
 
-  // 名前が入力されている場合はTodo画面を表示
+名前入力画面を再度表示させるために、ログアウト機能を追加します：
+
+**`components/todo/TodoApp.tsx`にログアウトボタンを追加：**
+
+```typescript
+import { clearUserName } from '@/lib/utils/user-storage';
+
+// TodoAppコンポーネント内に追加
+const handleLogout = (): void => {
+  clearUserName();
+  window.location.reload(); // ページをリロード
+};
+
+// 戻り値のJSX内に追加（タイトルの近く）
+<button
+  onClick={handleLogout}
+  className="ml-4 px-3 py-1 text-sm rounded-md"
+  style={{
+    backgroundColor: 'var(--button-secondary)',
+    color: '#000000'
+  }}
+>
+  ログアウト
+</button>
+```
+
+**使い方：**
+- 「ログアウト」ボタンをクリックすると、`localStorage`から名前が削除され、名前入力画面が表示されます
+
+### 修正3: 初期状態を明示的に設定
+
+`app/page.tsx`で、初期状態をより明確にします：
+
+```typescript
+// 名前が入力されていない場合は名前入力画面を表示
+if (!userName && !isLoading) {
   return (
-    <main 
-      className="w-full max-w-7xl mx-auto p-4 md:p-6"
-      style={{ 
-        backgroundColor: 'var(--bg-main)',
-        minHeight: '100vh'
-      }}
-    >
-      <div
-        className="w-full rounded-xl shadow-lg p-4 md:p-6"
-        style={{ 
-          backgroundColor: 'var(--bg-card)',
-          border: '1px solid var(--border-default)'
-        }}
-      >
-        {error && (
-          <div className="mb-4 p-4 bg-yellow-100 border border-yellow-400 rounded-md">
-            <p className="text-sm text-yellow-800">
-              ⚠️ {error}（Todoの読み込みに失敗しましたが、新規作成は可能です）
-            </p>
-          </div>
-        )}
-        <TodoApp initialTodos={initialTodos} userName={userName} />
-      </div>
-    </main>
+    // ... 名前入力画面のJSX
   );
 }
 ```
 
-### 修正2: Supabaseクライアントのエラーチェック強化
-
-`lib/supabase/client.ts`を修正して、環境変数が設定されていない場合のエラーを明確にします：
-
-```typescript
-/**
- * Supabaseクライアントの設定
- * クライアント側（ブラウザ）で使用
- */
-
-import { createClient } from '@supabase/supabase-js';
-import type { Database } from './database.types';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-
-if (typeof window !== 'undefined') {
-  if (!supabaseUrl || !supabaseAnonKey) {
-    console.error('❌ Supabase環境変数が設定されていません。');
-    console.error('Vercelのダッシュボードで以下を設定してください：');
-    console.error('- NEXT_PUBLIC_SUPABASE_URL');
-    console.error('- NEXT_PUBLIC_SUPABASE_ANON_KEY');
-  }
-}
-
-/**
- * Supabaseクライアントインスタンス
- */
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey);
-```
+**変更点：**
+- `if (!userName)` を `if (!userName && !isLoading)` に変更
+- これにより、ローディング中は名前入力画面が表示されません
 
 ---
 
-## 🚀 修正を適用する手順
+## 🧪 テスト手順
 
-### ステップ1: 修正を適用
+### テスト1: 初回アクセステスト
 
-1. `app/page.tsx`を上記の修正版に置き換える
-2. `lib/supabase/client.ts`を上記の修正版に置き換える
+1. **シークレットウィンドウ（プライベートブラウジング）でサイトを開く**
+2. **名前入力画面が表示されることを確認**
+3. **名前を入力して「開始」ボタンをクリック**
+4. **Todo画面が表示されることを確認**
 
-### ステップ2: ローカルで確認
+### テスト2: 再アクセステスト
 
-```powershell
-npm run dev
-```
+1. **通常のブラウザでサイトを開く**（既に名前が保存されている状態）
+2. **Todo画面が直接表示されることを確認**
+3. **ページをリロード（F5）**
+4. **Todo画面が表示され続けることを確認**
 
-- ブラウザで `http://localhost:3000` を開く
-- 名前入力画面が表示されるか確認
-- 名前を入力して、正常に動作するか確認
+### テスト3: ログアウトテスト
 
-### ステップ3: GitHubにプッシュ
-
-```powershell
-git add .
-git commit -m "Fix: Improve error handling for login screen display"
-git push
-```
-
-### ステップ4: Vercelで再デプロイ
-
-1. Vercelが自動的に再デプロイを開始
-2. デプロイが完了したら、公開サイトを確認
+1. **Todo画面で「ログアウト」ボタンをクリック**（修正2を適用した場合）
+2. **名前入力画面が表示されることを確認**
+3. **再度名前を入力して「開始」ボタンをクリック**
+4. **Todo画面が表示されることを確認**
 
 ---
 
-## 🔍 デバッグのヒント
+## 🎯 最も可能性が高い原因と対処
 
-### ブラウザのコンソールで確認
+**最も可能性が高い原因：**
+- **ブラウザの`localStorage`に既に名前が保存されている**
 
-1. **ブラウザの開発者ツール（F12キー）を開く**
-2. **「Console」タブを確認**
-3. **以下のメッセージを探す：**
-   - `Supabase環境変数が設定されていません` → 環境変数の問題
-   - `ユーザー読み込みエラー:` → 予期しないエラー
-   - `Todo取得エラー:` → Todo取得のエラー
+**最も簡単な対処方法：**
+1. **シークレットウィンドウ（プライベートブラウジング）でサイトを開く**
+2. **名前入力画面が表示されることを確認**
+3. 通常のブラウザでアクセスした場合は、既に名前が保存されているため、Todo画面が表示される（これは正常な動作です）
 
-### ネットワークタブで確認
-
-1. **「Network」タブを確認**
-2. **リクエストを確認：**
-   - `api/todos` へのリクエストがあるか
-   - リクエストが成功しているか（200 OK）
-   - リクエストが失敗しているか（エラーコード）
+**本番環境での動作：**
+- 初めてアクセスするユーザー → 名前入力画面が表示される ✅
+- 既に名前を入力したユーザー → Todo画面が表示される ✅
 
 ---
 
-## 💡 よくある問題と解決方法
+## 📞 追加のヘルプが必要な場合
 
-### Q1: 環境変数が設定されているのに、エラーが出る
+問題が解決しない場合は、以下を確認してください：
 
-**A:** 環境変数を設定した後、**再デプロイが必要**です。
-1. Vercelのダッシュボードで「Redeploy」をクリック
-2. または、`git push`で新しいコミットをプッシュ
+1. **ブラウザのコンソール（F12）のエラーメッセージ**
+2. **Vercelのデプロイログ**
+3. **Supabaseダッシュボードのログ**
 
-### Q2: 名前入力画面が表示されない
-
-**A:** ブラウザのキャッシュをクリアしてください。
-- `Ctrl + Shift + Delete` でキャッシュをクリア
-- または、シークレットモードで確認
-
-### Q3: Todoが表示されない
-
-**A:** Supabaseのデータベーステーブルが正しく作成されているか確認してください。
-1. Supabaseダッシュボード → 「Table Editor」
-2. `users`、`todos`、`categories`のテーブルが存在するか確認
-
----
-
-## ✅ 完了の確認
-
-以下のすべてが確認できれば完了です：
-
-1. ✅ 名前入力画面が表示される
-2. ✅ 名前を入力して「開始」をクリックできる
-3. ✅ Todo画面に切り替わる
-4. ✅ Todoを作成できる
-5. ✅ ページをリロードしても、名前が保存されている
+これらの情報があれば、より具体的な解決策を提案できます。

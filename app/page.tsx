@@ -12,74 +12,70 @@ export default function Page() {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [initialTodos, setInitialTodos] = useState<Todo[]>([]);
   const [isLoadingTodos, setIsLoadingTodos] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     // ページ読み込み時に名前を確認
     const loadUser = async (): Promise<void> => {
-      try {
-        if (hasUserName()) {
-          const name = getUserName();
-          if (name) {
-            setUserName(name);
-            // Todoデータを取得
-            setIsLoadingTodos(true);
-            setError(null);
+      // クライアント側でのみlocalStorageを確認
+      if (typeof window === 'undefined') {
+        setIsLoading(false);
+        return;
+      }
+
+      // デバッグ用ログ（開発環境のみ）
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔍 [DEBUG] ページ読み込み開始');
+        const hasName = hasUserName();
+        console.log('🔍 [DEBUG] hasUserName():', hasName);
+      }
+
+      if (hasUserName()) {
+        const name = getUserName();
+        if (name) {
+          if (process.env.NODE_ENV === 'development') {
+            console.log('🔍 [DEBUG] localStorageから名前を取得:', name);
+          }
+          setUserName(name);
+          // Todoデータを取得
+          setIsLoadingTodos(true);
+          try {
             const result = await getTodos(name);
+            if (process.env.NODE_ENV === 'development') {
+              console.log('🔍 [DEBUG] getTodos結果:', result);
+            }
             if (result.success && result.data) {
               setInitialTodos(result.data);
             } else {
-              // Todoの取得に失敗した場合でも、名前入力画面は表示しない
-              // （既にログイン済みのため）
-              console.error('Todo取得エラー:', result.error);
-              setInitialTodos([]);
+              // エラーが発生した場合でも、名前は設定されているのでTodo画面を表示
+              console.warn('⚠️ Todoの取得に失敗しましたが、名前入力画面はスキップします');
             }
-            setIsLoadingTodos(false);
+          } catch (error) {
+            console.error('❌ Todo取得エラー:', error);
+            // エラーが発生した場合でも、名前は設定されているのでTodo画面を表示
           }
+          setIsLoadingTodos(false);
         }
-      } catch (err) {
-        // 予期しないエラーが発生した場合
-        console.error('ユーザー読み込みエラー:', err);
-        setError(err instanceof Error ? err.message : 'エラーが発生しました');
-        // エラーが発生しても、名前入力画面を表示できるようにする
-        if (hasUserName()) {
-          const name = getUserName();
-          if (name) {
-            setUserName(name);
-            setInitialTodos([]);
-          }
+      } else {
+        if (process.env.NODE_ENV === 'development') {
+          console.log('🔍 [DEBUG] 名前が保存されていないため、名前入力画面を表示');
         }
-      } finally {
-        setIsLoading(false);
-        setIsLoadingTodos(false);
       }
+      setIsLoading(false);
     };
     void loadUser();
   }, []);
 
   const handleStart = async (name: string): Promise<void> => {
-    try {
-      // 名前を保存
-      saveUserName(name);
-      setUserName(name);
-      setError(null);
-      // Todoデータを取得
-      setIsLoadingTodos(true);
-      const result = await getTodos(name);
-      if (result.success && result.data) {
-        setInitialTodos(result.data);
-      } else {
-        console.error('Todo取得エラー:', result.error);
-        setError(result.error || 'Todoの取得に失敗しました');
-        setInitialTodos([]);
-      }
-    } catch (err) {
-      console.error('Todo取得エラー:', err);
-      setError(err instanceof Error ? err.message : 'エラーが発生しました');
-      setInitialTodos([]);
-    } finally {
-      setIsLoadingTodos(false);
+    // 名前を保存
+    saveUserName(name);
+    setUserName(name);
+    // Todoデータを取得
+    setIsLoadingTodos(true);
+    const result = await getTodos(name);
+    if (result.success && result.data) {
+      setInitialTodos(result.data);
     }
+    setIsLoadingTodos(false);
   };
 
   // ローディング中は何も表示しない（またはローディング表示）
@@ -139,13 +135,6 @@ export default function Page() {
           border: '1px solid var(--border-default)'
         }}
       >
-        {error && (
-          <div className="mb-4 p-4 bg-yellow-100 border border-yellow-400 rounded-md">
-            <p className="text-sm text-yellow-800">
-              ⚠️ {error}（Todoの読み込みに失敗しましたが、新規作成は可能です）
-            </p>
-          </div>
-        )}
         <TodoApp initialTodos={initialTodos} userName={userName} />
       </div>
     </main>
