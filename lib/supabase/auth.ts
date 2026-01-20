@@ -32,8 +32,7 @@ export async function findOrCreateUser(name: string): Promise<User | null> {
     // ユーザーが見つからない場合、新規作成
     const { data: newUser, error: insertError } = await supabase
       .from('users')
-      // 型定義と一致させるため、Insert型としてキャストする
-      .insert({ name: name.trim() } as import('./database.types').Database['public']['Tables']['users']['Insert'])
+      .insert({ name: name.trim() })
       .select()
       .single();
 

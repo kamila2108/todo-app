@@ -10,14 +10,13 @@ import {
   type ToggleTodoInput,
 } from '@/lib/validations/todo';
 import {
-  getTodosByUserId,
-  createTodo as createTodoInSupabase,
-  updateTodo as updateTodoInSupabase,
-  deleteTodo as deleteTodoInSupabase,
-  toggleTodo as toggleTodoInSupabase,
-} from '@/lib/supabase/todos';
-import { addCategory } from '@/lib/supabase/categories';
-import { findOrCreateUser, getUserByName } from '@/lib/supabase/auth';
+  getAllTodos,
+  createTodo as createTodoInStore,
+  updateTodo as updateTodoInStore,
+  deleteTodo as deleteTodoInStore,
+  toggleTodo as toggleTodoInStore,
+} from '@/lib/store/todo-store';
+import { addCategory } from '@/lib/store/category-store';
 import { Todo } from '@/lib/types/todo';
 
 export interface ActionResult<T> {
@@ -27,21 +26,13 @@ export interface ActionResult<T> {
 }
 
 /**
- * ユーザー名でTodoを取得
+ * ユーザー名でTodoを取得（localStorageベース）
  * @param userName ユーザー名
  * @returns Todo配列
  */
 export async function getTodos(userName: string): Promise<ActionResult<Todo[]>> {
   try {
-    const user = await getUserByName(userName);
-    if (!user) {
-      return {
-        success: false,
-        error: 'ユーザーが見つかりませんでした',
-      };
-    }
-
-    const todos = await getTodosByUserId(user.id);
+    const todos = getAllTodos(userName);
     return {
       success: true,
       data: todos,
@@ -82,35 +73,19 @@ export async function createTodoAction(
   try {
     const validatedInput = createTodoSchema.parse(input);
     const dueDate = parseDueDate(validatedInput.dueDate);
-    
-    // ユーザーを検索または作成
-    const user = await findOrCreateUser(userName);
-    if (!user) {
-      return {
-        success: false,
-        error: 'ユーザーの作成に失敗しました',
-      };
-    }
-    
+
     // カテゴリが指定されている場合は、カテゴリストアに追加
     if (validatedInput.category) {
-      await addCategory(user.id, validatedInput.category);
+      addCategory(userName, validatedInput.category);
     }
-    
-    // Todoを作成
-    const todo = await createTodoInSupabase(user.id, {
-      title: validatedInput.title,
-      description: validatedInput.description,
-      dueDate,
-      category: validatedInput.category,
-    });
 
-    if (!todo) {
-      return {
-        success: false,
-        error: 'Todoの作成に失敗しました',
-      };
-    }
+    const todo = createTodoInStore(
+      userName,
+      validatedInput.title,
+      validatedInput.description,
+      dueDate,
+      validatedInput.category
+    );
 
     return {
       success: true,
@@ -137,23 +112,13 @@ export async function updateTodoAction(
   try {
     const validatedInput = updateTodoSchema.parse(input);
     const dueDate = parseDueDate(validatedInput.dueDate);
-    
-    // ユーザーを取得
-    const user = await getUserByName(userName);
-    if (!user) {
-      return {
-        success: false,
-        error: 'ユーザーが見つかりませんでした',
-      };
-    }
-    
+
     // カテゴリが指定されている場合は、カテゴリストアに追加
     if (validatedInput.category) {
-      await addCategory(user.id, validatedInput.category);
+      addCategory(userName, validatedInput.category);
     }
-    
-    // Todoを更新
-    const todo = await updateTodoInSupabase(user.id, validatedInput.id, {
+
+    const todo = updateTodoInStore(userName, validatedInput.id, {
       title: validatedInput.title,
       description: validatedInput.description,
       completed: validatedInput.completed,
@@ -192,18 +157,8 @@ export async function deleteTodoAction(
 ): Promise<ActionResult<void>> {
   try {
     const validatedInput = deleteTodoSchema.parse(input);
-    
-    // ユーザーを取得
-    const user = await getUserByName(userName);
-    if (!user) {
-      return {
-        success: false,
-        error: 'ユーザーが見つかりませんでした',
-      };
-    }
-    
-    // Todoを削除
-    const deleted = await deleteTodoInSupabase(user.id, validatedInput.id);
+
+    const deleted = deleteTodoInStore(userName, validatedInput.id);
 
     if (!deleted) {
       return {
@@ -235,18 +190,8 @@ export async function toggleTodoAction(
 ): Promise<ActionResult<Todo>> {
   try {
     const validatedInput = toggleTodoSchema.parse(input);
-    
-    // ユーザーを取得
-    const user = await getUserByName(userName);
-    if (!user) {
-      return {
-        success: false,
-        error: 'ユーザーが見つかりませんでした',
-      };
-    }
-    
-    // Todoを切り替え
-    const todo = await toggleTodoInSupabase(user.id, validatedInput.id);
+
+    const todo = toggleTodoInStore(userName, validatedInput.id);
 
     if (!todo) {
       return {
