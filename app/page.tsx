@@ -16,6 +16,19 @@ export default function Page() {
   useEffect(() => {
     // ページ読み込み時に名前を確認
     const loadUser = async (): Promise<void> => {
+      // デバッグ用ログ（開発環境のみ）
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔍 [DEBUG] ページ読み込み開始');
+        const hasName = hasUserName();
+        console.log('🔍 [DEBUG] hasUserName():', hasName);
+        if (hasName) {
+          const name = getUserName();
+          console.log('🔍 [DEBUG] localStorageから名前を取得:', name);
+        } else {
+          console.log('🔍 [DEBUG] 名前が保存されていないため、名前入力画面を表示');
+        }
+      }
+
       if (hasUserName()) {
         const name = getUserName();
         if (name) {
@@ -23,6 +36,9 @@ export default function Page() {
           // Todoデータを取得
           setIsLoadingTodos(true);
           const result = await getTodos(name);
+          if (process.env.NODE_ENV === 'development') {
+            console.log('🔍 [DEBUG] getTodos結果:', result);
+          }
           if (result.success && result.data) {
             setInitialTodos(result.data);
           }
