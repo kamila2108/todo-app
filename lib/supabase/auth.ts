@@ -79,9 +79,9 @@ export async function signUp(
         email: email.trim(),
       };
 
-      const { data: insertedUser, error: insertError } = await supabase
-        .from('users')
-        .insert(insertData as any)
+      const { data: insertedUser, error: insertError } = await (supabase
+        .from('users') as any)
+        .insert(insertData)
         .select()
         .single();
 
