@@ -8,11 +8,11 @@ import { TodoItem } from './TodoItem';
 import { TodoFilterComponent } from './TodoFilter';
 
 interface TodoListProps {
-  userName: string;
+  userId: string;
   onRefresh?: () => void;
 }
 
-export function TodoList({ userName, onRefresh }: TodoListProps): JSX.Element {
+export function TodoList({ userId, onRefresh }: TodoListProps): JSX.Element {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [filter, setFilter] = useState<TodoFilter>('all');
   const [selectedCategory, setSelectedCategory] = useState<string>('');
@@ -27,7 +27,7 @@ export function TodoList({ userName, onRefresh }: TodoListProps): JSX.Element {
 
     setIsLoading(true);
     setError(null);
-    const result = await getTodos(userName);
+    const result = await getTodos(userId);
     if (result.success && result.data) {
       setTodos(result.data);
     } else {
@@ -39,24 +39,24 @@ export function TodoList({ userName, onRefresh }: TodoListProps): JSX.Element {
   useEffect(() => {
     void fetchTodos();
     const fetchCategories = async (): Promise<void> => {
-      const result = await getCategories(userName);
+      const result = await getCategories(userId);
       if (result.success && result.data) {
         setCategories(result.data);
       }
     };
     void fetchCategories();
-  }, [userName]);
+  }, [userId]);
 
   // Todo作成後にカテゴリ一覧を更新
   useEffect(() => {
     const fetchCategories = async (): Promise<void> => {
-      const result = await getCategories(userName);
+      const result = await getCategories(userId);
       if (result.success && result.data) {
         setCategories(result.data);
       }
     };
     void fetchCategories();
-  }, [todos, userName]);
+  }, [todos, userId]);
 
   // スクロール位置を復元
   useEffect(() => {
@@ -167,7 +167,7 @@ export function TodoList({ userName, onRefresh }: TodoListProps): JSX.Element {
       ) : (
         <div className="space-y-3">
           {filteredTodos.map((todo) => (
-            <TodoItem key={todo.id} userName={userName} todo={todo} onUpdate={fetchTodos} />
+            <TodoItem key={todo.id} userId={userId} todo={todo} onUpdate={fetchTodos} />
           ))}
         </div>
       )}

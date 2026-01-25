@@ -5,12 +5,12 @@ import { Todo } from '@/lib/types/todo';
 import { toggleTodoAction, deleteTodoAction } from '@/lib/actions/todo-actions';
 
 interface TodoItemProps {
-  userName: string;
+  userId: string;
   todo: Todo;
   onUpdate?: () => void;
 }
 
-export function TodoItem({ userName, todo, onUpdate }: TodoItemProps): JSX.Element {
+export function TodoItem({ userId, todo, onUpdate }: TodoItemProps): JSX.Element {
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
   const [isToggling, setIsToggling] = useState<boolean>(false);
 
@@ -19,7 +19,7 @@ export function TodoItem({ userName, todo, onUpdate }: TodoItemProps): JSX.Eleme
     const scrollY = window.scrollY || window.pageYOffset || 0;
     
     setIsToggling(true);
-    const result = await toggleTodoAction(userName, { id: todo.id });
+    const result = await toggleTodoAction(userId, { id: todo.id });
     setIsToggling(false);
     if (result.success) {
       // スクロール位置を復元
@@ -36,16 +36,16 @@ export function TodoItem({ userName, todo, onUpdate }: TodoItemProps): JSX.Eleme
   };
 
   const handleDelete = async (): Promise<void> => {
-    if (!confirm('Delete this todo?')) {
+    if (!confirm('このTodoを削除しますか？')) {
       return;
     }
     setIsDeleting(true);
-    const result = await deleteTodoAction(userName, { id: todo.id });
+    const result = await deleteTodoAction(userId, { id: todo.id });
     setIsDeleting(false);
     if (result.success) {
       onUpdate?.();
     } else {
-      alert(result.error || 'Todo delete failed');
+      alert(result.error || 'Todoの削除に失敗しました');
     }
   };
 
@@ -127,7 +127,7 @@ export function TodoItem({ userName, todo, onUpdate }: TodoItemProps): JSX.Eleme
           disabled={isDeleting}
           className="ml-2 px-3 py-1 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {isDeleting ? 'Deleting...' : 'Delete'}
+          {isDeleting ? '削除中...' : '削除'}
         </button>
       </div>
     </div>

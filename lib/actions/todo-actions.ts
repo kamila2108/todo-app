@@ -10,13 +10,13 @@ import {
   type ToggleTodoInput,
 } from '@/lib/validations/todo';
 import {
-  getAllTodos,
-  createTodo as createTodoInStore,
-  updateTodo as updateTodoInStore,
-  deleteTodo as deleteTodoInStore,
-  toggleTodo as toggleTodoInStore,
-} from '@/lib/store/todo-store';
-import { addCategory } from '@/lib/store/category-store';
+  getTodosByUserId,
+  createTodo as createTodoInSupabase,
+  updateTodo as updateTodoInSupabase,
+  deleteTodo as deleteTodoInSupabase,
+  toggleTodo as toggleTodoInSupabase,
+} from '@/lib/supabase/todos';
+import { addCategory } from '@/lib/supabase/categories';
 import { Todo } from '@/lib/types/todo';
 
 export interface ActionResult<T> {
@@ -26,13 +26,13 @@ export interface ActionResult<T> {
 }
 
 /**
- * ユーザー名でTodoを取得（localStorageベース）
- * @param userName ユーザー名
+ * ユーザーIDでTodoを取得
+ * @param userId ユーザーID
  * @returns Todo配列
  */
-export async function getTodos(userName: string): Promise<ActionResult<Todo[]>> {
+export async function getTodos(userId: string): Promise<ActionResult<Todo[]>> {
   try {
-    const todos = getAllTodos(userName);
+    const todos = await getTodosByUserId(userId);
     return {
       success: true,
       data: todos,
@@ -67,25 +67,32 @@ function parseDueDate(input?: string): Date | undefined {
 }
 
 export async function createTodoAction(
-  userName: string,
+  userId: string,
   input: CreateTodoInput
 ): Promise<ActionResult<Todo>> {
   try {
     const validatedInput = createTodoSchema.parse(input);
     const dueDate = parseDueDate(validatedInput.dueDate);
-
+    
     // カテゴリが指定されている場合は、カテゴリストアに追加
     if (validatedInput.category) {
-      addCategory(userName, validatedInput.category);
+      await addCategory(userId, validatedInput.category);
     }
-
-    const todo = createTodoInStore(
-      userName,
-      validatedInput.title,
-      validatedInput.description,
+    
+    // Todoを作成
+    const todo = await createTodoInSupabase(userId, {
+      title: validatedInput.title,
+      description: validatedInput.description,
       dueDate,
-      validatedInput.category
-    );
+      category: validatedInput.category,
+    });
+
+    if (!todo) {
+      return {
+        success: false,
+        error: 'Todoの作成に失敗しました',
+      };
+    }
 
     return {
       success: true,
@@ -106,19 +113,20 @@ export async function createTodoAction(
 }
 
 export async function updateTodoAction(
-  userName: string,
+  userId: string,
   input: UpdateTodoInput
 ): Promise<ActionResult<Todo>> {
   try {
     const validatedInput = updateTodoSchema.parse(input);
     const dueDate = parseDueDate(validatedInput.dueDate);
-
+    
     // カテゴリが指定されている場合は、カテゴリストアに追加
     if (validatedInput.category) {
-      addCategory(userName, validatedInput.category);
+      await addCategory(userId, validatedInput.category);
     }
-
-    const todo = updateTodoInStore(userName, validatedInput.id, {
+    
+    // Todoを更新
+    const todo = await updateTodoInSupabase(userId, validatedInput.id, {
       title: validatedInput.title,
       description: validatedInput.description,
       completed: validatedInput.completed,
@@ -152,13 +160,14 @@ export async function updateTodoAction(
 }
 
 export async function deleteTodoAction(
-  userName: string,
+  userId: string,
   input: DeleteTodoInput
 ): Promise<ActionResult<void>> {
   try {
     const validatedInput = deleteTodoSchema.parse(input);
-
-    const deleted = deleteTodoInStore(userName, validatedInput.id);
+    
+    // Todoを削除
+    const deleted = await deleteTodoInSupabase(userId, validatedInput.id);
 
     if (!deleted) {
       return {
@@ -185,13 +194,14 @@ export async function deleteTodoAction(
 }
 
 export async function toggleTodoAction(
-  userName: string,
+  userId: string,
   input: ToggleTodoInput
 ): Promise<ActionResult<Todo>> {
   try {
     const validatedInput = toggleTodoSchema.parse(input);
-
-    const todo = toggleTodoInStore(userName, validatedInput.id);
+    
+    // Todoを切り替え
+    const todo = await toggleTodoInSupabase(userId, validatedInput.id);
 
     if (!todo) {
       return {

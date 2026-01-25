@@ -1,54 +1,80 @@
 'use client';
 
+/**
+ * メインページコンポーネント
+ * 
+ * 【初心者向け説明】
+ * このページは、アプリのメイン画面です。
+ * 
+ * 機能：
+ * 1. ログイン状態を確認
+ * 2. ログインしていない場合は、会員登録・ログイン画面を表示
+ * 3. ログインしている場合は、Todoアプリを表示
+ */
+
 import { useState, useEffect } from 'react';
 import { TodoApp } from "@/features/todo/components/TodoApp";
-import { NameInput } from "@/components/auth/NameInput";
+import { SignUpForm } from "@/components/auth/SignUpForm";
+import { LoginForm } from "@/components/auth/LoginForm";
 import { Todo } from "@/lib/types/todo";
 import { getTodos } from "@/lib/actions/todo-actions";
-import { getUserName, hasUserName, saveUserName } from "@/lib/utils/user-storage";
+import { getCurrentUser, type User } from "@/lib/supabase/auth";
+import { useAuth } from "@/lib/contexts/AuthContext";
+
+type AuthView = 'login' | 'signup';
 
 export default function Page() {
-  const [userName, setUserName] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const { user, isLoading: authLoading, refreshUser, signOut } = useAuth();
+  const [authView, setAuthView] = useState<AuthView>('login');
   const [initialTodos, setInitialTodos] = useState<Todo[]>([]);
   const [isLoadingTodos, setIsLoadingTodos] = useState<boolean>(false);
+  const [isLoggingOut, setIsLoggingOut] = useState<boolean>(false);
 
+  // ユーザーがログインした時にTodoデータを取得
   useEffect(() => {
-    // ページ読み込み時に名前を確認
-    const loadUser = async (): Promise<void> => {
-      if (hasUserName()) {
-        const name = getUserName();
-        if (name) {
-          setUserName(name);
-          // Todoデータを取得
-          setIsLoadingTodos(true);
-          const result = await getTodos(name);
-          if (result.success && result.data) {
-            setInitialTodos(result.data);
-          }
-          setIsLoadingTodos(false);
+    const loadTodos = async (): Promise<void> => {
+      if (user) {
+        setIsLoadingTodos(true);
+        // ユーザーIDでTodoを取得
+        const result = await getTodos(user.id);
+        if (result.success && result.data) {
+          setInitialTodos(result.data);
         }
+        setIsLoadingTodos(false);
       }
-      setIsLoading(false);
     };
-    void loadUser();
-  }, []);
+    void loadTodos();
+  }, [user]);
 
-  const handleStart = async (name: string): Promise<void> => {
-    // 名前を保存
-    saveUserName(name);
-    setUserName(name);
-    // Todoデータを取得
-    setIsLoadingTodos(true);
-    const result = await getTodos(name);
-    if (result.success && result.data) {
-      setInitialTodos(result.data);
+  /**
+   * 会員登録成功時の処理
+   */
+  const handleSignUpSuccess = async (newUser: User): Promise<void> => {
+    // ユーザー情報を更新
+    await refreshUser();
+  };
+
+  /**
+   * ログイン成功時の処理
+   */
+  const handleLoginSuccess = async (loggedInUser: User): Promise<void> => {
+    // ユーザー情報を更新
+    await refreshUser();
+  };
+
+  /**
+   * ログアウト処理
+   */
+  const handleLogout = async (): Promise<void> => {
+    if (confirm('ログアウトしますか？')) {
+      setIsLoggingOut(true);
+      await signOut();
+      setIsLoggingOut(false);
     }
-    setIsLoadingTodos(false);
   };
 
   // ローディング中は何も表示しない（またはローディング表示）
-  if (isLoading || isLoadingTodos) {
+  if (authLoading || isLoadingTodos) {
     return (
       <main 
         className="w-full max-w-7xl mx-auto p-4 md:p-6"
@@ -64,8 +90,8 @@ export default function Page() {
     );
   }
 
-  // 名前が入力されていない場合は名前入力画面を表示
-  if (!userName) {
+  // ログインしていない場合は会員登録・ログイン画面を表示
+  if (!user) {
     return (
       <main 
         className="w-full max-w-7xl mx-auto p-4 md:p-6 flex items-center justify-center"
@@ -82,13 +108,24 @@ export default function Page() {
             maxWidth: '600px'
           }}
         >
-          <NameInput onStart={handleStart} />
+          {authView === 'login' ? (
+            <LoginForm 
+              onSuccess={handleLoginSuccess}
+              onSwitchToSignUp={() => setAuthView('signup')}
+            />
+          ) : (
+            <SignUpForm 
+              onSuccess={handleSignUpSuccess}
+              onSwitchToLogin={() => setAuthView('login')}
+            />
+          )}
         </div>
       </main>
     );
   }
 
-  // 名前が入力されている場合はTodo画面を表示
+  // ログインしている場合はTodo画面を表示
+
   return (
     <main 
       className="w-full max-w-7xl mx-auto p-4 md:p-6"
@@ -97,6 +134,34 @@ export default function Page() {
         minHeight: '100vh'
       }}
     >
+      {/* ヘッダー（タイトルとログアウトボタン） */}
+      <div className="flex justify-between items-center mb-4">
+        <h1 className="text-2xl font-bold" style={{ color: '#000000' }}>
+          {user.name}さんのTodo
+        </h1>
+        <button
+          onClick={handleLogout}
+          disabled={isLoggingOut}
+          className="px-4 py-2 rounded-md text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          style={{
+            backgroundColor: isLoggingOut ? '#cccccc' : 'var(--button-secondary, #6b7280)',
+            color: '#FFFFFF'
+          }}
+          onMouseEnter={(e) => {
+            if (!isLoggingOut) {
+              e.currentTarget.style.backgroundColor = 'var(--button-secondary-hover, #4b5563)';
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (!isLoggingOut) {
+              e.currentTarget.style.backgroundColor = 'var(--button-secondary, #6b7280)';
+            }
+          }}
+        >
+          {isLoggingOut ? 'ログアウト中...' : 'ログアウト'}
+        </button>
+      </div>
+
       <div
         className="w-full rounded-xl shadow-lg p-4 md:p-6"
         style={{ 
@@ -104,7 +169,7 @@ export default function Page() {
           border: '1px solid var(--border-default)'
         }}
       >
-        <TodoApp initialTodos={initialTodos} userName={userName} />
+        <TodoApp initialTodos={initialTodos} userId={user.id} userName={user.name} />
       </div>
     </main>
   );
