@@ -73,7 +73,7 @@ export async function signUp(
       userData = existingUser;
     } else {
       // トリガーが動作していない場合、手動で挿入
-      const insertData: Database['public']['Tables']['users']['Insert'] = {
+      const insertData = {
         id: authData.user.id,
         name: name.trim(),
         email: email.trim(),
@@ -81,7 +81,7 @@ export async function signUp(
 
       const { data: insertedUser, error: insertError } = await (supabase
         .from('users') as any)
-        .insert(insertData)
+        .insert(insertData as any)
         .select()
         .single();
 
