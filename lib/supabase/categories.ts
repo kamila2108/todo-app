@@ -22,7 +22,7 @@ export async function getCategoriesByUserId(userId: string): Promise<string[]> {
       return [];
     }
 
-    return (data || []).map((item) => item.name);
+    return ((data || []) as Array<{ name: string }>).map((item) => item.name);
   } catch (error) {
     console.error('カテゴリ取得エラー:', error);
     return [];
@@ -52,7 +52,7 @@ export async function addCategory(userId: string, categoryName: string): Promise
       .insert({
         user_id: userId,
         name: trimmed,
-      });
+      } as any);
 
     if (error) {
       console.error('カテゴリ追加エラー:', error);

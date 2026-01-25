@@ -24,7 +24,16 @@ export async function getTodosByUserId(userId: string): Promise<Todo[]> {
     }
 
     // データベースのデータをTodo型に変換
-    return (data || []).map((item) => ({
+    return ((data || []) as Array<{
+      id: string;
+      title: string;
+      description: string | null;
+      due_date: string | null;
+      category: string | null;
+      completed: boolean;
+      created_at: string;
+      updated_at: string;
+    }>).map((item) => ({
       id: item.id,
       title: item.title,
       description: item.description || undefined,
@@ -65,7 +74,7 @@ export async function createTodo(
         due_date: todoData.dueDate ? todoData.dueDate.toISOString().split('T')[0] : null,
         category: todoData.category || null,
         completed: false,
-      })
+      } as any)
       .select()
       .single();
 
@@ -75,15 +84,25 @@ export async function createTodo(
     }
 
     // データベースのデータをTodo型に変換
+    const todoRow = data as {
+      id: string;
+      title: string;
+      description: string | null;
+      due_date: string | null;
+      category: string | null;
+      completed: boolean;
+      created_at: string;
+      updated_at: string;
+    };
     return {
-      id: data.id,
-      title: data.title,
-      description: data.description || undefined,
-      dueDate: data.due_date ? new Date(data.due_date) : undefined,
-      category: data.category || undefined,
-      completed: data.completed,
-      createdAt: new Date(data.created_at),
-      updatedAt: new Date(data.updated_at),
+      id: todoRow.id,
+      title: todoRow.title,
+      description: todoRow.description || undefined,
+      dueDate: todoRow.due_date ? new Date(todoRow.due_date) : undefined,
+      category: todoRow.category || undefined,
+      completed: todoRow.completed,
+      createdAt: new Date(todoRow.created_at),
+      updatedAt: new Date(todoRow.updated_at),
     };
   } catch (error) {
     console.error('Todo作成エラー:', error);
@@ -110,7 +129,7 @@ export async function updateTodo(
   }
 ): Promise<Todo | null> {
   try {
-    const updateData: any = {
+    const updateData: Record<string, any> = {
       updated_at: new Date().toISOString(),
     };
 
@@ -122,8 +141,8 @@ export async function updateTodo(
     }
     if (updates.category !== undefined) updateData.category = updates.category || null;
 
-    const { data, error } = await supabase
-      .from('todos')
+    const { data, error } = await (supabase
+      .from('todos') as any)
       .update(updateData)
       .eq('id', todoId)
       .eq('user_id', userId) // セキュリティ：ユーザーIDも確認
@@ -136,15 +155,25 @@ export async function updateTodo(
     }
 
     // データベースのデータをTodo型に変換
+    const todoData = data as {
+      id: string;
+      title: string;
+      description: string | null;
+      due_date: string | null;
+      category: string | null;
+      completed: boolean;
+      created_at: string;
+      updated_at: string;
+    };
     return {
-      id: data.id,
-      title: data.title,
-      description: data.description || undefined,
-      dueDate: data.due_date ? new Date(data.due_date) : undefined,
-      category: data.category || undefined,
-      completed: data.completed,
-      createdAt: new Date(data.created_at),
-      updatedAt: new Date(data.updated_at),
+      id: todoData.id,
+      title: todoData.title,
+      description: todoData.description || undefined,
+      dueDate: todoData.due_date ? new Date(todoData.due_date) : undefined,
+      category: todoData.category || undefined,
+      completed: todoData.completed,
+      createdAt: new Date(todoData.created_at),
+      updatedAt: new Date(todoData.updated_at),
     };
   } catch (error) {
     console.error('Todo更新エラー:', error);
@@ -200,8 +229,9 @@ export async function toggleTodo(userId: string, todoId: string): Promise<Todo |
     }
 
     // 完了状態を反転
+    const todoData = currentTodo as { completed: boolean };
     return await updateTodo(userId, todoId, {
-      completed: !currentTodo.completed,
+      completed: !todoData.completed,
     });
   } catch (error) {
     console.error('Todo切り替えエラー:', error);

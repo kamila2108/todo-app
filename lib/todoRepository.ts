@@ -42,9 +42,10 @@ export const todoRepository = {
     todosStore = [newTodo, ...todosStore];
     
     // カテゴリをストアに追加
-    if (data.category) {
-      addCategory(data.category);
-    }
+    // 注意: この関数は現在使用されていません（Supabaseを使用しているため）
+    // if (data.category) {
+    //   addCategory(data.category);
+    // }
     
     return newTodo;
   },

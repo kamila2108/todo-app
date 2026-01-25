@@ -81,7 +81,7 @@ export async function signUp(
 
       const { data: insertedUser, error: insertError } = await supabase
         .from('users')
-        .insert(insertData)
+        .insert(insertData as any)
         .select()
         .single();
 
