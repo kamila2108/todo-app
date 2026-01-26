@@ -134,8 +134,8 @@ export async function signIn(
     }
 
     // 2. usersテーブルからユーザー情報を取得
-    const { data: userData, error: selectError } = await supabase
-      .from('users')
+    const { data: userData, error: selectError } = await (supabase
+      .from('users') as any)
       .select('*')
       .eq('id', authData.user.id)
       .single();
@@ -181,18 +181,32 @@ export async function getCurrentUser(): Promise<User | null> {
     // 1. 現在のセッションを取得
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
-    if (sessionError || !session?.user) {
+    if (sessionError) {
+      console.error('セッション取得エラー:', sessionError);
+      return null;
+    }
+
+    if (!session?.user) {
+      // セッションがない場合はnullを返す（正常な状態）
       return null;
     }
 
     // 2. usersテーブルからユーザー情報を取得
-    const { data: userData, error: selectError } = await supabase
-      .from('users')
+    const { data: userData, error: selectError } = await (supabase
+      .from('users') as any)
       .select('*')
       .eq('id', session.user.id)
       .single();
 
-    if (selectError || !userData) {
+    if (selectError) {
+      console.error('ユーザー情報取得エラー:', selectError);
+      // セッションはあるが、usersテーブルにユーザー情報がない場合
+      // これは異常な状態なので、nullを返す
+      return null;
+    }
+
+    if (!userData) {
+      // ユーザーデータが存在しない場合
       return null;
     }
 
@@ -210,8 +224,8 @@ export async function getCurrentUser(): Promise<User | null> {
  */
 export async function getUserById(userId: string): Promise<User | null> {
   try {
-    const { data, error } = await supabase
-      .from('users')
+    const { data, error } = await (supabase
+      .from('users') as any)
       .select('*')
       .eq('id', userId)
       .single();
@@ -235,8 +249,8 @@ export async function getUserById(userId: string): Promise<User | null> {
  */
 export async function getUserByEmail(email: string): Promise<User | null> {
   try {
-    const { data, error } = await supabase
-      .from('users')
+    const { data, error } = await (supabase
+      .from('users') as any)
       .select('*')
       .eq('email', email.trim())
       .single();

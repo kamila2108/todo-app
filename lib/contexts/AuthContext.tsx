@@ -15,7 +15,7 @@
  * 2. useAuth()フックで認証情報にアクセス
  */
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { getCurrentUser, signOut as authSignOut, type User } from '@/lib/supabase/auth';
 import { supabase } from '@/lib/supabase/client';
 
@@ -46,8 +46,9 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
   /**
    * 現在のユーザー情報を取得
    */
-  const refreshUser = async (): Promise<void> => {
+  const refreshUser = useCallback(async (): Promise<void> => {
     try {
+      setIsLoading(true);
       const currentUser = await getCurrentUser();
       setUser(currentUser);
     } catch (error) {
@@ -56,7 +57,7 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
   /**
    * ログアウト処理
@@ -76,22 +77,70 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
 
   // コンポーネントがマウントされた時にユーザー情報を取得
   useEffect(() => {
-    void refreshUser();
+    let isMounted = true;
+    let timeoutId: NodeJS.Timeout | null = null;
+
+    const initializeAuth = async (): Promise<void> => {
+      try {
+        setIsLoading(true);
+        const currentUser = await getCurrentUser();
+        if (isMounted) {
+          setUser(currentUser);
+          setIsLoading(false);
+        }
+      } catch (error) {
+        console.error('認証初期化エラー:', error);
+        if (isMounted) {
+          setUser(null);
+          setIsLoading(false);
+        }
+      }
+    };
+
+    void initializeAuth();
 
     // Supabaseの認証状態変更を監視
     // （別のタブでログアウトした場合などに対応）
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event) => {
+        if (!isMounted) return;
+        
         if (event === 'SIGNED_OUT') {
           setUser(null);
+          setIsLoading(false);
         } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-          await refreshUser();
+          try {
+            setIsLoading(true);
+            const currentUser = await getCurrentUser();
+            if (isMounted) {
+              setUser(currentUser);
+              setIsLoading(false);
+            }
+          } catch (error) {
+            console.error('認証状態変更時のエラー:', error);
+            if (isMounted) {
+              setUser(null);
+              setIsLoading(false);
+            }
+          }
         }
       }
     );
 
+    // タイムアウト処理（5秒後に強制的にローディングを解除）
+    timeoutId = setTimeout(() => {
+      if (isMounted) {
+        console.warn('認証状態の取得がタイムアウトしました');
+        setIsLoading(false);
+      }
+    }, 5000);
+
     return () => {
+      isMounted = false;
       subscription.unsubscribe();
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
     };
   }, []);
 
