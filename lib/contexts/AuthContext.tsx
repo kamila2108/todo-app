@@ -79,48 +79,78 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
   useEffect(() => {
     let isMounted = true;
     let timeoutId: NodeJS.Timeout | null = null;
+    let authInitialized = false;
 
+    // 初期認証状態を取得（INITIAL_SESSIONイベントのフォールバック）
     const initializeAuth = async (): Promise<void> => {
       try {
-        setIsLoading(true);
         const currentUser = await getCurrentUser();
-        if (isMounted) {
+        if (isMounted && !authInitialized) {
           setUser(currentUser);
           setIsLoading(false);
+          authInitialized = true;
         }
       } catch (error) {
+        // AbortErrorなどのエラーを無視（開発モードでのReact Strict Modeによるもの）
+        if (error instanceof Error && (error.name === 'AbortError' || error.message.includes('aborted'))) {
+          // エラーを無視して終了
+          return;
+        }
         console.error('認証初期化エラー:', error);
-        if (isMounted) {
+        if (isMounted && !authInitialized) {
           setUser(null);
           setIsLoading(false);
+          authInitialized = true;
         }
       }
     };
 
+    // 初期化を実行（INITIAL_SESSIONイベントと並行して実行）
     void initializeAuth();
 
     // Supabaseの認証状態変更を監視
+    // INITIAL_SESSIONイベントで初期認証状態を取得
     // （別のタブでログアウトした場合などに対応）
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event) => {
+      async (event, session) => {
         if (!isMounted) return;
+        
+        console.log('認証状態変更:', event, session?.user?.id);
         
         if (event === 'SIGNED_OUT') {
           setUser(null);
           setIsLoading(false);
-        } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+          authInitialized = true;
+        } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') {
           try {
-            setIsLoading(true);
-            const currentUser = await getCurrentUser();
-            if (isMounted) {
-              setUser(currentUser);
-              setIsLoading(false);
+            // セッションがある場合のみユーザー情報を取得
+            if (session?.user) {
+              setIsLoading(true);
+              const currentUser = await getCurrentUser();
+              if (isMounted) {
+                setUser(currentUser);
+                setIsLoading(false);
+                authInitialized = true;
+              }
+            } else {
+              // セッションがない場合はログアウト状態
+              if (isMounted) {
+                setUser(null);
+                setIsLoading(false);
+                authInitialized = true;
+              }
             }
           } catch (error) {
+            // AbortErrorなどのエラーを無視（開発モードでのReact Strict Modeによるもの）
+            if (error instanceof Error && (error.name === 'AbortError' || error.message.includes('aborted'))) {
+              // エラーを無視して終了
+              return;
+            }
             console.error('認証状態変更時のエラー:', error);
             if (isMounted) {
               setUser(null);
               setIsLoading(false);
+              authInitialized = true;
             }
           }
         }

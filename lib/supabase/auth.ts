@@ -200,6 +200,12 @@ export async function getCurrentUser(): Promise<User | null> {
 
     if (selectError) {
       console.error('ユーザー情報取得エラー:', selectError);
+      console.error('エラー詳細:', {
+        message: selectError.message,
+        details: selectError.details,
+        hint: selectError.hint,
+        code: selectError.code
+      });
       // セッションはあるが、usersテーブルにユーザー情報がない場合
       // これは異常な状態なので、nullを返す
       return null;
@@ -207,6 +213,7 @@ export async function getCurrentUser(): Promise<User | null> {
 
     if (!userData) {
       // ユーザーデータが存在しない場合
+      console.warn('セッションはあるが、usersテーブルにユーザーデータが存在しません');
       return null;
     }
 

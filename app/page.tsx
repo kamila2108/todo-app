@@ -32,18 +32,45 @@ export default function Page() {
 
   // ユーザーがログインした時にTodoデータを取得
   useEffect(() => {
+    let isMounted = true;
+
     const loadTodos = async (): Promise<void> => {
       if (user) {
-        setIsLoadingTodos(true);
-        // ユーザーIDでTodoを取得
-        const result = await getTodos(user.id);
-        if (result.success && result.data) {
-          setInitialTodos(result.data);
+        try {
+          setIsLoadingTodos(true);
+          // ユーザーIDでTodoを取得
+          const result = await getTodos(user.id);
+          if (isMounted) {
+            if (result.success && result.data) {
+              setInitialTodos(result.data);
+            }
+            setIsLoadingTodos(false);
+          }
+        } catch (error) {
+          // AbortErrorなどのエラーを無視（開発モードでのReact Strict Modeによるもの）
+          if (error instanceof Error && (error.name === 'AbortError' || error.message.includes('aborted'))) {
+            // エラーを無視して終了
+            return;
+          }
+          console.error('Todo取得エラー:', error);
+          if (isMounted) {
+            setIsLoadingTodos(false);
+          }
         }
-        setIsLoadingTodos(false);
+      } else {
+        // ユーザーがログアウトした場合は、Todoをクリア
+        if (isMounted) {
+          setInitialTodos([]);
+          setIsLoadingTodos(false);
+        }
       }
     };
+
     void loadTodos();
+
+    return () => {
+      isMounted = false;
+    };
   }, [user]);
 
   /**
