@@ -96,9 +96,16 @@ export default function Page() {
    */
   const handleLogout = async (): Promise<void> => {
     if (confirm('ログアウトしますか？')) {
-      setIsLoggingOut(true);
-      await signOut();
-      setIsLoggingOut(false);
+      try {
+        setIsLoggingOut(true);
+        console.log('ログアウトボタンが押されました。signOutを呼び出します...');
+        await signOut();
+        console.log('signOutが完了しました');
+      } catch (error) {
+        console.error('ログアウト処理エラー:', error);
+      } finally {
+        setIsLoggingOut(false);
+      }
     }
   };
 

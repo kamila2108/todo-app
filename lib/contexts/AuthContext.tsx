@@ -67,18 +67,28 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
   /**
    * ログアウト処理
    */
-  const signOut = async (): Promise<void> => {
+  const signOut = useCallback(async (): Promise<void> => {
     try {
+      console.log('ログアウト処理を開始します...');
+      // まず、ユーザー情報をクリア（即座にログアウト状態にする）
+      setUser(null);
+      setIsLoading(false);
+      
+      // Supabase Authでログアウト
       const result = await authSignOut();
       if (result.error) {
         console.error('ログアウトエラー:', result.error);
+        // エラーが発生しても、既にユーザー情報はクリア済み
         return;
       }
-      setUser(null);
+      console.log('ログアウト成功しました');
     } catch (error) {
       console.error('ログアウトエラー:', error);
+      // エラーが発生しても、ユーザー情報をクリア
+      setUser(null);
+      setIsLoading(false);
     }
-  };
+  }, []);
 
   // コンポーネントがマウントされた時にユーザー情報を取得
   useEffect(() => {
@@ -165,9 +175,12 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
         console.log('認証状態変更:', event, session?.user?.id);
         
         if (event === 'SIGNED_OUT') {
+          console.log('認証状態変更: SIGNED_OUTイベント。ログアウト状態に設定します。');
+          // SIGNED_OUTイベントが発火した場合、確実にログアウト状態にする
           setUser(null);
           setIsLoading(false);
           authInitialized = true;
+          console.log('認証状態変更: ログアウト状態に設定しました');
         } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') {
           console.log('認証状態変更: SIGNED_IN/TOKEN_REFRESHED/INITIAL_SESSION', { event, hasSession: !!session?.user });
           try {
