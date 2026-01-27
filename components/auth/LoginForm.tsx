@@ -61,17 +61,28 @@ export function LoginForm({ onSuccess, onSwitchToSignUp }: LoginFormProps): JSX.
 
     // ログイン処理
     setIsLoading(true);
-    const result = await signIn(email, password);
+    try {
+      console.log('ログイン処理を開始します...');
+      const result = await signIn(email, password);
+      console.log('ログイン処理の結果:', { hasError: !!result.error, hasUser: !!result.user });
 
-    if (result.error || !result.user) {
-      setError(result.error || 'ログインに失敗しました');
+      if (result.error || !result.user) {
+        console.error('ログイン失敗:', result.error);
+        setError(result.error || 'ログインに失敗しました');
+        setIsLoading(false);
+        return;
+      }
+
+      // 成功したら親コンポーネントに通知
+      console.log('ログイン成功。onSuccessを呼び出します...');
       setIsLoading(false);
-      return;
+      onSuccess(result.user);
+      console.log('onSuccessを呼び出しました');
+    } catch (error) {
+      console.error('ログイン処理エラー:', error);
+      setError('ログイン処理中にエラーが発生しました');
+      setIsLoading(false);
     }
-
-    // 成功したら親コンポーネントに通知
-    setIsLoading(false);
-    onSuccess(result.user);
   };
 
   return (

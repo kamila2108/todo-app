@@ -85,8 +85,10 @@ export default function Page() {
    * ログイン成功時の処理
    */
   const handleLoginSuccess = async (loggedInUser: User): Promise<void> => {
-    // ユーザー情報を更新
-    await refreshUser();
+    console.log('handleLoginSuccessが呼ばれました:', loggedInUser);
+    // onAuthStateChangeのSIGNED_INイベントで自動的にユーザー情報が更新されるため、
+    // ここでは何もしない（refreshUser()を呼び出す必要はない）
+    // SIGNED_INイベントでセッション情報からユーザー情報が構築される
   };
 
   /**

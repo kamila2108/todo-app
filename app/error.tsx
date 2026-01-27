@@ -5,6 +5,8 @@
  * アプリ全体で発生したエラーをキャッチして表示
  */
 
+import { useEffect } from 'react';
+
 interface ErrorProps {
   error: Error & { digest?: string };
   reset: () => void;
@@ -12,7 +14,23 @@ interface ErrorProps {
 
 export default function Error({ error, reset }: ErrorProps) {
   // AbortErrorは無視（開発モードでのReact Strict Modeによるもの）
-  if (error.name === 'AbortError') {
+  const isAbortError =
+    error.name === 'AbortError' ||
+    error.message?.includes('aborted') ||
+    error.message?.includes('signal is aborted');
+
+  // AbortErrorの場合は自動的にリセット
+  useEffect(() => {
+    if (isAbortError) {
+      // 少し遅延させてリセット（無限ループを防ぐ）
+      const timer = setTimeout(() => {
+        reset();
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [isAbortError, reset]);
+
+  if (isAbortError) {
     return null;
   }
 

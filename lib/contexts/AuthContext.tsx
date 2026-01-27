@@ -52,6 +52,11 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
       const currentUser = await getCurrentUser();
       setUser(currentUser);
     } catch (error) {
+      // AbortErrorなどのエラーを無視（開発モードでのReact Strict Modeによるもの）
+      if (error instanceof Error && (error.name === 'AbortError' || error.message.includes('aborted'))) {
+        // エラーを無視して終了
+        return;
+      }
       console.error('ユーザー情報取得エラー:', error);
       setUser(null);
     } finally {
@@ -81,22 +86,64 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
     let timeoutId: NodeJS.Timeout | null = null;
     let authInitialized = false;
 
-    // 初期認証状態を取得（INITIAL_SESSIONイベントのフォールバック）
-    const initializeAuth = async (): Promise<void> => {
+    // 初期認証状態を即座に取得（onAuthStateChangeを待たない）
+    const initializeAuthImmediately = async (): Promise<void> => {
       try {
-        const currentUser = await getCurrentUser();
-        if (isMounted && !authInitialized) {
-          setUser(currentUser);
-          setIsLoading(false);
-          authInitialized = true;
-        }
-      } catch (error) {
-        // AbortErrorなどのエラーを無視（開発モードでのReact Strict Modeによるもの）
-        if (error instanceof Error && (error.name === 'AbortError' || error.message.includes('aborted'))) {
-          // エラーを無視して終了
+        // セッションを直接取得（タイムアウト付き）
+        const sessionPromise = supabase.auth.getSession();
+        const timeoutPromise = new Promise<{ data: { session: null }, error: null }>((resolve) => {
+          setTimeout(() => {
+            resolve({ data: { session: null }, error: null });
+          }, 300);
+        });
+
+        const result = await Promise.race([sessionPromise, timeoutPromise]);
+        
+        if (result.error) {
+          console.error('初期認証: セッション取得エラー:', result.error);
+          if (isMounted && !authInitialized) {
+            setUser(null);
+            setIsLoading(false);
+            authInitialized = true;
+          }
           return;
         }
-        console.error('認証初期化エラー:', error);
+
+        const session = result.data?.session;
+
+        if (session?.user) {
+          // セッションがある場合、セッション情報からユーザー情報を構築
+          // getCurrentUser()を呼び出すとAbortErrorが発生する可能性があるため、
+          // セッション情報から直接構築する
+          const sessionUser = session.user;
+          const fallbackUser: User = {
+            id: sessionUser.id,
+            email: sessionUser.email || '',
+            name: (sessionUser.user_metadata?.name as string) || 'ユーザー',
+            created_at: sessionUser.created_at || new Date().toISOString(),
+          };
+          if (isMounted && !authInitialized) {
+            setUser(fallbackUser);
+            setIsLoading(false);
+            authInitialized = true;
+            console.log('初期認証: セッション情報からユーザー情報を構築しました');
+          }
+        } else {
+          // セッションがない場合はログアウト状態
+          if (isMounted && !authInitialized) {
+            setUser(null);
+            setIsLoading(false);
+            authInitialized = true;
+            console.log('初期認証: セッションがありません（ログアウト状態）');
+          }
+        }
+      } catch (error) {
+        // AbortErrorなどのエラーを無視
+        if (error instanceof Error && (error.name === 'AbortError' || error.message.includes('aborted'))) {
+          console.log('初期認証: AbortErrorが発生しました。ログアウト状態として処理します。');
+        } else {
+          console.error('初期認証エラー:', error);
+        }
         if (isMounted && !authInitialized) {
           setUser(null);
           setIsLoading(false);
@@ -105,8 +152,8 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
       }
     };
 
-    // 初期化を実行（INITIAL_SESSIONイベントと並行して実行）
-    void initializeAuth();
+    // 即座に初期認証状態を取得
+    void initializeAuthImmediately();
 
     // Supabaseの認証状態変更を監視
     // INITIAL_SESSIONイベントで初期認証状態を取得
@@ -122,18 +169,46 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
           setIsLoading(false);
           authInitialized = true;
         } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') {
+          console.log('認証状態変更: SIGNED_IN/TOKEN_REFRESHED/INITIAL_SESSION', { event, hasSession: !!session?.user });
           try {
             // セッションがある場合のみユーザー情報を取得
             if (session?.user) {
+              console.log('認証状態変更: ユーザー情報を取得します...');
               setIsLoading(true);
-              const currentUser = await getCurrentUser();
-              if (isMounted) {
-                setUser(currentUser);
-                setIsLoading(false);
-                authInitialized = true;
+              
+              // SIGNED_INイベントの場合は、signIn関数内で既にユーザー情報を取得しているため、
+              // ここではセッション情報から直接ユーザー情報を構築する
+              // これにより、AbortErrorの競合を回避できる
+              if (event === 'SIGNED_IN') {
+                console.log('認証状態変更: SIGNED_INイベント。セッション情報からユーザー情報を構築します。');
+                // セッション情報からユーザー情報を構築
+                const sessionUser = session.user;
+                const fallbackUser: User = {
+                  id: sessionUser.id,
+                  email: sessionUser.email || '',
+                  name: (sessionUser.user_metadata?.name as string) || 'ユーザー',
+                  created_at: sessionUser.created_at || new Date().toISOString(),
+                };
+                if (isMounted) {
+                  setUser(fallbackUser);
+                  setIsLoading(false);
+                  authInitialized = true;
+                  console.log('認証状態変更: ユーザー情報を設定しました（セッション情報から）');
+                }
+              } else {
+                // INITIAL_SESSIONやTOKEN_REFRESHEDの場合は、getCurrentUser()を呼び出す
+                const currentUser = await getCurrentUser();
+                console.log('認証状態変更: ユーザー情報を取得しました:', currentUser);
+                if (isMounted) {
+                  setUser(currentUser);
+                  setIsLoading(false);
+                  authInitialized = true;
+                  console.log('認証状態変更: ユーザー情報を設定しました');
+                }
               }
             } else {
               // セッションがない場合はログアウト状態
+              console.log('認証状態変更: セッションがありません');
               if (isMounted) {
                 setUser(null);
                 setIsLoading(false);
@@ -143,7 +218,19 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
           } catch (error) {
             // AbortErrorなどのエラーを無視（開発モードでのReact Strict Modeによるもの）
             if (error instanceof Error && (error.name === 'AbortError' || error.message.includes('aborted'))) {
-              // エラーを無視して終了
+              console.warn('認証状態変更: AbortErrorが発生しました。セッション情報からユーザー情報を構築します。');
+              // セッション情報からユーザー情報を構築
+              if (session?.user && isMounted) {
+                const fallbackUser: User = {
+                  id: session.user.id,
+                  email: session.user.email || '',
+                  name: (session.user.user_metadata?.name as string) || 'ユーザー',
+                  created_at: session.user.created_at || new Date().toISOString(),
+                };
+                setUser(fallbackUser);
+                setIsLoading(false);
+                authInitialized = true;
+              }
               return;
             }
             console.error('認証状態変更時のエラー:', error);
@@ -157,13 +244,16 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
       }
     );
 
-    // タイムアウト処理（5秒後に強制的にローディングを解除）
+    // タイムアウト処理（500ms後に強制的にローディングを解除）
+    // 即座に初期認証状態を取得しているため、タイムアウトは短く設定
     timeoutId = setTimeout(() => {
-      if (isMounted) {
-        console.warn('認証状態の取得がタイムアウトしました');
+      if (isMounted && !authInitialized) {
+        console.warn('認証状態の取得がタイムアウトしました。ログアウト状態として処理します。');
+        setUser(null);
         setIsLoading(false);
+        authInitialized = true;
       }
-    }, 5000);
+    }, 500);
 
     return () => {
       isMounted = false;

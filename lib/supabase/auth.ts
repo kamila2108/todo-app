@@ -119,6 +119,7 @@ export async function signIn(
   password: string
 ): Promise<{ user: User | null; error: string | null }> {
   try {
+    console.log('signIn: Supabase Authでログインを開始します...');
     // 1. Supabase Authでログイン
     const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
       email: email.trim(),
@@ -126,26 +127,95 @@ export async function signIn(
     });
 
     if (authError) {
+      console.error('signIn: 認証エラー:', authError);
       return { user: null, error: authError.message };
     }
 
     if (!authData.user) {
+      console.error('signIn: ユーザーデータがありません');
       return { user: null, error: 'ログインに失敗しました' };
     }
 
+    console.log('signIn: 認証成功。ユーザーID:', authData.user.id);
+
     // 2. usersテーブルからユーザー情報を取得
-    const { data: userData, error: selectError } = await (supabase
-      .from('users') as any)
-      .select('*')
-      .eq('id', authData.user.id)
-      .single();
+    // AbortErrorが発生する可能性があるため、try-catchで処理
+    console.log('signIn: usersテーブルからユーザー情報を取得します...');
+    try {
+      const { data: userData, error: selectError } = await (supabase
+        .from('users') as any)
+        .select('*')
+        .eq('id', authData.user.id)
+        .single();
 
-    if (selectError || !userData) {
-      return { user: null, error: 'ユーザー情報の取得に失敗しました' };
+      if (selectError) {
+        // AbortErrorの場合は、セッション情報からユーザー情報を構築
+        if (selectError.name === 'AbortError' || selectError.message?.includes('aborted')) {
+          console.warn('signIn: ユーザー情報取得が中断されました。セッション情報からユーザー情報を構築します。');
+          const sessionUser = authData.user;
+          const fallbackUser: User = {
+            id: sessionUser.id,
+            email: sessionUser.email || email.trim(),
+            name: (sessionUser.user_metadata?.name as string) || 'ユーザー',
+            created_at: sessionUser.created_at || new Date().toISOString(),
+          };
+          console.log('signIn: フォールバックユーザー情報を返します:', fallbackUser);
+          return { user: fallbackUser, error: null };
+        }
+        
+        console.error('signIn: ユーザー情報取得エラー:', selectError);
+        console.error('エラー詳細:', {
+          message: selectError.message,
+          details: selectError.details,
+          hint: selectError.hint,
+          code: selectError.code
+        });
+        return { user: null, error: 'ユーザー情報の取得に失敗しました' };
+      }
+
+      if (!userData) {
+        console.error('signIn: ユーザーデータが存在しません');
+        return { user: null, error: 'ユーザー情報の取得に失敗しました' };
+      }
+
+      console.log('signIn: ユーザー情報を取得しました:', userData);
+      return { user: userData as User, error: null };
+    } catch (error) {
+      // AbortErrorの場合は、セッション情報からユーザー情報を構築
+      if (error instanceof Error && (error.name === 'AbortError' || error.message.includes('aborted'))) {
+        console.warn('ユーザー情報取得が中断されました。セッション情報からユーザー情報を構築します。');
+        const sessionUser = authData.user;
+        const fallbackUser: User = {
+          id: sessionUser.id,
+          email: sessionUser.email || email.trim(),
+          name: (sessionUser.user_metadata?.name as string) || 'ユーザー',
+          created_at: sessionUser.created_at || new Date().toISOString(),
+        };
+        return { user: fallbackUser, error: null };
+      }
+      // その他のエラーは再スロー
+      throw error;
     }
-
-    return { user: userData as User, error: null };
   } catch (error) {
+    // AbortErrorの場合は、セッション情報からユーザー情報を構築
+    if (error instanceof Error && (error.name === 'AbortError' || error.message.includes('aborted'))) {
+      console.warn('ログイン処理が中断されました。セッション情報からユーザー情報を構築します。');
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          const fallbackUser: User = {
+            id: session.user.id,
+            email: session.user.email || email.trim(),
+            name: (session.user.user_metadata?.name as string) || 'ユーザー',
+            created_at: session.user.created_at || new Date().toISOString(),
+          };
+          return { user: fallbackUser, error: null };
+        }
+      } catch (fallbackError) {
+        console.error('フォールバック処理エラー:', fallbackError);
+      }
+    }
+    
     console.error('ログインエラー:', error);
     return { user: null, error: '予期しないエラーが発生しました' };
   }
